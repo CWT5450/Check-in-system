@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="light only">
+<title>ICOPE 說明會簽到系統</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+  :root {
+    --teal:#0a7c6e; --teal-light:#e8f5f3; --teal-mid:#148f7f;
+    --gold:#c89f4a; --dark:#1a2a28; --gray:#6b7c7a;
+    --border:#d4e5e2; --danger:#c0392b; --success:#0a7c6e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans TC',sans-serif;background:#f0f6f5;color:var(--dark);min-height:100vh;}
+  .header{background:var(--teal);color:white;padding:16px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(10,124,110,0.3);}
+  .header-icon{width:46px;height:52px;background:#ffffff;border-radius:11px;display:flex;align-items:center;justify-content:center;padding:5px 7px;flex-shrink:0;}
+  .header-icon svg,.header-icon img{width:100%;height:100%;display:block;object-fit:contain;}
+  .header h1{font-size:23px;font-weight:800;letter-spacing:0.5px;}
+  .header p{font-size:13px;opacity:0.85;margin-top:3px;}
+  #hdr-host{margin-left:auto;text-align:right;font-size:15px;font-weight:600;line-height:1.55;opacity:0.92;white-space:nowrap;}
+  @media (max-width:640px){ .header{flex-wrap:wrap;} #hdr-host{font-size:12.5px;} }
+  .tab-bar{display:flex;background:white;border-bottom:2px solid var(--border);overflow-x:auto;}
+  .tab-btn{flex:1;min-width:72px;padding:16px 8px;border:none;background:none;font-family:'Noto Sans TC',sans-serif;font-size:18px;font-weight:700;color:var(--gray);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s;white-space:nowrap;}
+  .tab-btn.active{color:var(--teal);border-bottom-color:var(--teal);}
+  .page{display:none;padding:18px 14px 40px;max-width:560px;margin:0 auto;}
+  .page.active{display:block;}
+  .card{background:white;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(10,124,110,0.08);border:1px solid var(--border);}
+  .card-title{font-size:18px;font-weight:800;color:#1a2a28;display:flex;align-items:center;gap:8px;
+    background:var(--teal-light);padding:11px 14px;border-radius:8px 8px 0 0;
+    margin:-18px -18px 16px -18px;border-bottom:2px solid var(--border);}
+  .card-title::before{content:'';width:5px;height:18px;background:var(--teal);border-radius:3px;flex-shrink:0;}
+  .sess-btns{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
+  .sess-btn{flex:1 1 40%;padding:14px;border:2px solid var(--border);border-radius:10px;background:white;font-family:'Noto Sans TC',sans-serif;font-size:16px;font-weight:600;color:var(--gray);cursor:pointer;transition:all 0.2s;text-align:center;}
+  .sess-btn.selected{border-color:var(--teal);background:var(--teal-light);color:var(--teal);font-weight:700;}
+  .form-group{margin-bottom:14px;position:relative;}
+  .form-group label{display:block;font-size:15px;font-weight:600;color:var(--gray);margin-bottom:6px;}
+  input[type=text],input[type=password],input[type=email],textarea,select{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:'Noto Sans TC',sans-serif;font-size:17px;color:var(--dark);background:white;outline:none;transition:border-color 0.2s;}
+  input[type=text]:focus,input[type=password]:focus,input[type=email]:focus,textarea:focus{border-color:var(--teal);}
+
+  /* 自訂下拉 */
+  .name-wrap{position:relative;}
+  .name-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--teal);border-top:none;border-radius:0 0 9px 9px;max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+  .name-option{padding:12px 14px;font-size:16px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.1s;}
+  .name-option:hover,.name-option.active{background:var(--teal-light);color:var(--teal);}
+  .name-status{margin-top:6px;font-size:14px;font-weight:600;padding:6px 10px;border-radius:6px;display:none;}
+  .name-status.ok{display:block;background:#e8f5f0;color:#0a7c6e;}
+  .name-status.ng{display:block;background:#fdecea;color:#c0392b;}
+
+  .sig-wrap{border:1.5px solid var(--border);border-radius:9px;background:#fafafa;overflow:hidden;position:relative;cursor:crosshair;}
+  canvas{display:block;width:100%;height:200px;}
+  .sig-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#b0c4c2;font-size:13px;pointer-events:none;transition:opacity 0.2s;}
+  .btn{padding:11px 18px;border:none;border-radius:9px;font-family:'Noto Sans TC',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+  .btn-primary{background:var(--teal);color:white;width:100%;padding:14px;font-size:15px;margin-top:6px;}
+  .btn-primary:hover{background:var(--teal-mid);}
+  .btn-primary:disabled{background:#b0c8c5;cursor:not-allowed;}
+  .btn-sm{padding:9px 15px;font-size:14px;}
+  .btn-secondary{background:#f0f6f5;color:var(--teal);border:1.5px solid var(--border);}
+  .btn-danger{background:#fdecea;color:var(--danger);}
+  .row{display:flex;gap:8px;flex-wrap:wrap;}
+  .alert{padding:11px 14px;border-radius:8px;font-size:15px;margin-top:10px;display:none;}
+  .alert.show{display:block;}
+  .alert.success{background:#e8f5f0;color:#0a7c6e;border-left:3px solid #0a7c6e;}
+  .alert.error{background:#fdecea;color:#c0392b;border-left:3px solid #c0392b;}
+  .alert.info{background:#e8f0fe;color:#1a73e8;border-left:3px solid #1a73e8;}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+  .stat-box{background:var(--teal-light);border-radius:10px;padding:12px;text-align:center;}
+  .stat-num{font-size:28px;font-weight:700;color:var(--teal);}
+  .stat-label{font-size:13px;color:var(--gray);margin-top:3px;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{background:#f0f6f5;padding:9px 6px;text-align:left;font-weight:600;color:var(--teal);}
+  td{padding:9px 6px;border-bottom:1px solid #f0f0f0;}
+  .table-wrap{overflow-x:auto;}
+  .badge{display:inline-block;padding:3px 8px;border-radius:10px;font-size:13px;font-weight:600;}
+  .badge-ok{background:#e8f5f0;color:#0a7c6e;}
+  .badge-ng{background:#f0f0f0;color:#999;}
+  .loading-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,0.8);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:14px;color:var(--teal);}
+  .loading-overlay.show{display:flex;}
+  .spinner{width:36px;height:36px;border:3px solid var(--teal-light);border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .api-warn{background:#fff8e1;border:1px solid #f9a825;border-radius:8px;padding:10px 12px;font-size:12px;color:#e65100;margin-bottom:14px;display:none;}
+  .api-warn.show{display:block;}
+  .notice-banner{display:none;background:#fff8e1;border:1.5px solid #f9a825;color:#e65100;border-radius:12px;padding:13px 16px;margin-bottom:14px;font-size:17px;font-weight:800;text-align:center;line-height:1.6;letter-spacing:0.5px;}
+  .notice-banner.show{display:block;}
+  .radio-group label{font-size:15px;margin-right:14px;}
+  .switch-btn{flex:1;padding:14px 0;font-size:18px;font-weight:800;border:2px solid var(--border);background:white;color:var(--gray);}
+  .switch-btn.on{background:#0a7c6e;color:white;border-color:#0a7c6e;box-shadow:0 3px 8px rgba(10,124,110,0.3);}
+  .switch-btn.off{background:#c0392b;color:white;border-color:#c0392b;box-shadow:0 3px 8px rgba(192,57,43,0.3);}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <span>資料上傳中…</span>
+</div>
+
+<!-- 簽到成功全螢幕畫面 -->
+<div id="checkin-success" style="display:none;position:fixed;inset:0;background:#0a7c6e;z-index:998;
+  flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center;">
+  <div style="font-size:96px;line-height:1;">✅</div>
+  <div id="ci-success-title" style="font-size:42px;font-weight:900;color:white;letter-spacing:2px;">簽到完成！</div>
+  <div id="ci-success-name" style="font-size:26px;color:rgba(255,255,255,0.92);font-weight:700;"></div>
+  <div id="ci-success-sub" style="font-size:17px;color:rgba(255,255,255,0.78);margin-top:6px;line-height:1.6;"></div>
+  <div id="ci-success-countdown" style="margin-top:20px;font-size:14px;color:rgba(255,255,255,0.55);"></div>
+  <button onclick="closeCheckinSuccess()"
+    style="margin-top:6px;padding:14px 40px;border:2px solid rgba(255,255,255,0.6);
+    border-radius:30px;background:transparent;color:white;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;">
+    確認關閉
+  </button>
+</div>
+
+<!-- 簽退成功全螢幕畫面 -->
+<div id="checkout-success" style="display:none;position:fixed;inset:0;background:#0a7c6e;z-index:998;
+  flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div style="font-size:90px;line-height:1;">✅</div>
+  <div id="co-success-title" style="font-size:40px;font-weight:900;color:white;letter-spacing:2px;">簽退完成！</div>
+  <div id="co-success-name" style="font-size:22px;color:rgba(255,255,255,0.85);font-weight:600;"></div>
+  <div style="font-size:15px;color:rgba(255,255,255,0.65);margin-top:8px;">感謝您今天的參與 🌿</div>
+  <div id="co-success-countdown" style="margin-top:24px;font-size:13px;color:rgba(255,255,255,0.5);"></div>
+  <button onclick="closeCheckoutSuccess()"
+    style="margin-top:8px;padding:12px 32px;border:2px solid rgba(255,255,255,0.5);
+    border-radius:30px;background:transparent;color:white;font-size:15px;
+    font-weight:600;cursor:pointer;font-family:inherit;">
+    確認關閉
+  </button>
+</div>
+
+<div class="header">
+  <div class="header-icon">
+    <img alt="國民健康署" src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain;display:block;">
+  </div>
+  <div>
+    <h1 id="hdr-title">ICOPE 說明會簽到系統</h1>
+    <p id="hdr-sub">115年 長者內在能力檢測(ICOPE)說明會</p>
+  </div>
+  <div id="hdr-host"></div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('checkin',this)">✍️ 簽到</button>
+  <button class="tab-btn" onclick="switchTab('checkout',this)">🚪 簽退</button>
+  <button class="tab-btn" onclick="requireAdmin('admin',this)">⚙️ 管理</button>
+  <button class="tab-btn" onclick="requireAdmin('records',this)">📊 紀錄</button>
+</div>
+
+<!-- ══ 簽到頁 ══ -->
+<div id="page-checkin" class="page active">
+  <div class="api-warn" id="api-warn">⚠️ 尚未設定 API 網址，資料將只存在本機。請至管理頁設定 Apps Script 網址。</div>
+  <div id="list-status" style="font-size:12px;color:var(--gray);text-align:center;padding:6px 0 2px;">⏳ 名單載入中…</div>
+
+  <!-- 報到截止鎖定畫面 -->
+  <div id="ci-locked" style="display:none;">
+    <div class="card" style="text-align:center;padding:30px 20px;background:#fdecea;border-color:#e74c3c;">
+      <div style="font-size:48px;margin-bottom:10px;">🔒</div>
+      <div id="ci-locked-title" style="font-size:17px;font-weight:800;color:#c0392b;margin-bottom:6px;">報到已截止</div>
+      <div id="ci-locked-msg" style="font-size:13px;color:#888;margin-bottom:16px;">如有問題請洽工作人員</div>
+      <button id="ci-locked-guide" class="btn btn-primary" onclick="switchTab('checkout')" style="display:none;max-width:260px;margin:0 auto;">🚪 前往簽退</button>
+    </div>
+  </div>
+
+  <div id="ci-content">
+  <div class="notice-banner"></div>
+  <div class="card" id="ci-sess-card" style="text-align:center;padding:14px 18px;">
+    <div style="font-size:12px;color:var(--gray);margin-bottom:3px;">目前簽到場次</div>
+    <div id="ci-auto-sess-badge" style="font-size:17px;font-weight:800;color:var(--teal);"></div>
+    <div id="ci-session-badge" style="display:none;"></div>
+    <div class="sess-btns" id="ci-sess-btns" style="display:none;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">基本資料</div>
+
+    <div class="form-group">
+      <label>① 您的姓名</label>
+      <div class="name-wrap">
+        <input type="text" id="ci-name" placeholder="請輸入姓名" oninput="onNameInput()" onblur="hideDropdown()" autocomplete="off">
+        <div class="name-dropdown" id="name-dropdown"></div>
+      </div>
+      <div class="name-status" id="name-status"></div>
+      <div id="ci-reg-info" style="display:none;background:#e8f5f3;border:1px solid var(--border);border-radius:9px;padding:11px 13px;margin-top:8px;font-size:14px;color:#0a7c6e;font-weight:600;line-height:1.7;"></div>
+    </div>
+
+    <div class="form-group">
+      <label>② 身份類別／職稱</label>
+      <select id="ci-role" onchange="onRoleChange()">
+        <option value="">-- 請選擇 --</option>
+        <option value="行政人員">行政人員</option>
+        <option value="護理師">護理師（護理人員）</option>
+        <option value="醫師">醫師</option>
+        <option value="物理治療師">物理治療師</option>
+        <option value="職能治療師">職能治療師</option>
+        <option value="營養師">營養師</option>
+        <option value="社工師">社工師</option>
+        <option value="衛教師">衛教師</option>
+        <option value="其他醫事人員">其他醫事人員</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+
+    <!-- 身份證：僅「護理人員」選取時出現；申請繼續教育積分才需填 -->
+    <div class="form-group" id="ci-idno-row" style="display:none;">
+      <label>🪪 身份證字號</label>
+      <input type="text" id="ci-idno" placeholder="A123456789" maxlength="10" inputmode="text" autocomplete="off" style="text-transform:uppercase" oninput="onIdnoInput()">
+      <div id="ci-idno-status" style="display:none;font-size:14px;font-weight:700;margin-top:6px;"></div>
+      <div style="font-size:13px;color:#e65100;margin-top:6px;line-height:1.6;font-weight:600;">護理人員如需申請<b>繼續教育積分</b>才需填寫，不需要可留空。</div>
+    </div>
+
+    <!-- Email：需要研習證明才填 -->
+    <div class="form-group" id="ci-email-row">
+      <label>📧 Email</label>
+      <input type="email" id="ci-email" placeholder="example@mail.com" autocomplete="off" oninput="onEmailInput()">
+      <div id="ci-email-status" style="display:none;font-size:14px;font-weight:700;margin-top:6px;"></div>
+      <div style="font-size:13px;color:#e65100;margin-top:6px;line-height:1.6;font-weight:600;">如需寄送<b>研習證明</b>才需填寫，不需要可留空。</div>
+    </div>
+
+    <!-- 服務單位：已報名者背景自動帶入並隱藏；現場報名者才顯示請其填寫 -->
+    <div class="form-group" id="ci-unit-row" style="display:none;">
+      <label>🏢 服務單位／機構（現場報名必填）</label>
+      <input type="text" id="ci-unit" placeholder="請填寫服務單位">
+    </div>
+
+    <div class="form-group">
+      <label>③ 電子簽名</label>
+      <div class="sig-wrap" id="ci-sig-wrap">
+        <canvas id="sigCanvas"></canvas>
+        <div class="sig-hint" id="sigHint">請在此處簽名</div>
+      </div>
+      <button class="btn btn-sm btn-secondary" onclick="clearSig()" style="margin-top:6px;">清除重簽</button>
+    </div>
+
+    <div id="ci-alert" class="alert"></div>
+    <button class="btn btn-primary" id="ci-submit-btn" onclick="submitCheckin()">✅ 確認簽到</button>
+  </div>
+  </div><!-- /ci-content -->
+</div>
+
+<!-- ══ 簽退頁 ══ -->
+<div id="page-checkout" class="page">
+  <div class="notice-banner"></div>
+  <div class="card" id="co-sess-card" style="text-align:center;">
+    <div class="card-title">場次資訊</div>
+    <div style="font-size:12px;color:var(--gray);margin-bottom:3px;">目前簽退場次</div>
+    <div id="co-auto-sess-badge" style="font-size:17px;font-weight:800;color:var(--teal);"></div>
+    <div class="sess-btns" id="co-sess-btns" style="display:none;"></div>
+  </div>
+
+  <div id="co-survey-card" style="background:linear-gradient(135deg,#fff3e0,#fff8e1);border:2.5px solid #f57c00;border-radius:16px;padding:20px 16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(245,124,0,0.18);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <div style="width:36px;height:36px;background:#f57c00;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📋</div>
+      <div><div style="font-size:15px;font-weight:800;color:#e65100;letter-spacing:0.5px;">Step 1：填寫回饋問卷</div></div>
+    </div>
+    <div style="height:1px;background:#f9a825;opacity:0.4;margin:12px 0;"></div>
+    <p style="font-size:16px;font-weight:700;color:#6d4c41;margin-bottom:14px;line-height:1.6;text-align:center;">
+      簽退前請先完成回饋問卷，感謝您的寶貴意見！
+    </p>
+    <a id="co-survey-link" href="#" target="_blank"
+       style="display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;
+              background:linear-gradient(135deg,#f57c00,#e65100);color:white;
+              border-radius:12px;padding:16px;font-size:16px;font-weight:700;
+              box-shadow:0 4px 12px rgba(230,81,0,0.35);letter-spacing:0.5px;"
+       onclick="onSurveyOpen()">
+      <span style="font-size:22px;">📝</span><span>前往填寫回饋問卷</span><span style="font-size:18px;">→</span>
+    </a>
+    <div style="font-size:13px;color:#e65100;text-align:center;margin-top:8px;font-weight:600;">
+      ⚠️ 填完問卷後，請返回此頁面打勾，才能完成簽退
+    </div>
+    <div id="co-survey-confirm" style="display:block;margin-top:14px;">
+      <label onclick="toggleSurveyDone()"
+             style="display:flex;align-items:center;gap:12px;padding:14px 16px;
+                    background:white;border:2px solid #f57c00;border-radius:12px;cursor:pointer;transition:all 0.2s;">
+        <div id="co-survey-check-box"
+             style="width:32px;height:32px;border-radius:8px;border:2.5px solid #ccc;
+                    background:white;display:flex;align-items:center;justify-content:center;
+                    font-size:22px;flex-shrink:0;transition:all 0.2s;"></div>
+        <input type="checkbox" id="co-survey-done" onchange="updateCoSubmitBtn()" style="display:none;">
+        <span id="co-survey-label" style="font-size:15px;font-weight:700;color:#c0392b;">我已完成回饋問卷填寫</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="co-locked" style="display:none;text-align:center;padding:24px 16px;">
+      <div style="font-size:44px;margin-bottom:10px;">🔒</div>
+      <div style="font-size:17px;font-weight:800;color:#c0392b;margin-bottom:6px;">簽退尚未開放</div>
+      <div id="co-locked-msg" style="font-size:14px;color:#666;margin-bottom:16px;line-height:1.7;">活動進行中，請先完成「簽到」。</div>
+      <button class="btn btn-primary" onclick="switchTab('checkin')" style="max-width:260px;margin:0 auto;">✍️ 先前往簽到</button>
+    </div>
+    <div id="co-form">
+      <div class="card-title">Step 2：確認簽退</div>
+      <div class="form-group">
+        <label>您的姓名</label>
+        <input type="text" id="co-name" placeholder="請輸入姓名">
+      </div>
+      <div id="co-alert" class="alert"></div>
+      <button class="btn btn-primary" id="co-submit-btn" onclick="submitCheckout()" disabled
+        style="opacity:0.5;" title="請先完成回饋問卷">🚪 確認簽退</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 管理頁 ══ -->
+<div id="page-admin" class="page">
+  <div class="card" style="border-color:var(--teal);">
+    <div class="card-title">🎯 目前場次（套用到簽到／簽退）</div>
+    <div class="sess-btns" id="adm-sess-btns"><!-- 依 SESSIONS 動態產生 --></div>
+    <div id="adm-sess-current" style="font-size:13px;font-weight:700;color:var(--teal);margin-top:10px;text-align:center;"></div>
+    <p style="font-size:11px;color:#999;margin-top:8px;line-height:1.5;">選好場次後，簽到／簽退頁就固定顯示這一場，學員不會選錯。活動當天系統會自動帶到當天場次。</p>
+  </div>
+
+  <div class="card" style="border-color:var(--teal);">
+    <div class="card-title">簽到 / 簽退 開關</div>
+    <p style="font-size:14px;color:#e65100;font-weight:700;margin-bottom:14px;line-height:1.6;">👥 這裡按下去，會同步到<u>所有</u>掃 QR 的參加者手機。</p>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div style="width:52px;font-weight:800;font-size:18px;">簽到</div>
+      <button class="btn switch-btn" id="ci-open-btn" onclick="setCiOpen(true)">開</button>
+      <button class="btn switch-btn" id="ci-close-btn" onclick="setCiOpen(false)">關</button>
+      <span id="ci-open-state" style="margin-left:auto;font-weight:800;font-size:15px;"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:52px;font-weight:800;font-size:18px;">簽退</div>
+      <button class="btn switch-btn" id="co-open-btn" onclick="setCoOpen(true)">開</button>
+      <button class="btn switch-btn" id="co-close-btn" onclick="setCoOpen(false)">關</button>
+      <span id="co-open-state" style="margin-left:auto;font-weight:800;font-size:15px;"></span>
+    </div>
+    <p id="adm-ctrl-hint" style="font-size:12px;color:#999;margin-top:12px;line-height:1.5;">需先設定 Apps Script 網址，開關才會同步給大家。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Apps Script 設定</div>
+    <div class="form-group">
+      <label>Apps Script 網址（部署後貼上）</label>
+      <input type="text" id="adm-api-url" placeholder="https://script.google.com/macros/s/...">
+    </div>
+    <button class="btn btn-sm btn-primary" onclick="saveApiUrl()">儲存網址</button>
+    <button class="btn btn-sm btn-secondary" onclick="testApi()" style="margin-left:8px;">測試連線</button>
+    <div id="adm-api-status" style="font-size:12px;margin-top:8px;color:var(--gray);"></div>
+  </div>
+
+  <div class="card" style="border-color:var(--teal);">
+    <div class="card-title">🧩 活動設定（改這裡＝全體同步）</div>
+    <p style="font-size:13px;color:#e65100;font-weight:700;margin-bottom:12px;line-height:1.6;">以後辦新活動：改這裡的設定＋倒入報名名單，就能重複使用這套系統。儲存後會同步給所有人。</p>
+    <div class="form-group"><label>活動標題</label><input type="text" id="cfg-title"></div>
+    <div class="form-group"><label>副標題</label><input type="text" id="cfg-subtitle"></div>
+    <div class="form-group"><label>頁首右側主辦單位（一行一段，空白＝不顯示）</label><textarea id="cfg-host" rows="2"></textarea></div>
+    <div class="form-group"><label>提醒橫幅（一行一段，空白＝不顯示）</label><textarea id="cfg-notice" rows="2"></textarea></div>
+    <div class="form-group"><label>回饋問卷網址（空白＝簽退免問卷）</label><input type="text" id="cfg-survey" placeholder="https://forms.gle/..."></div>
+    <div class="form-group"><label>📋 報名表試算表網址（簽到系統從這裡讀名單；空白＝用本系統這張表）</label><input type="text" id="cfg-regurl" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+
+    <div style="font-weight:800;font-size:15px;margin:14px 0 8px;">場次</div>
+    <div id="cfg-sessions"></div>
+    <button class="btn btn-sm btn-secondary" onclick="cfgAddSession()">＋ 新增場次</button>
+
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="cfgSave()">💾 儲存並套用（全體同步）</button>
+    <div id="cfg-status" style="font-size:13px;margin-top:8px;color:var(--gray);"></div>
+
+    <div style="height:1px;background:var(--border);margin:16px 0;"></div>
+    <div style="font-weight:700;margin-bottom:6px;font-size:14px;">模板（匯出／匯入設定）</div>
+    <textarea id="cfg-json" rows="3" placeholder="按「匯出設定」會把目前設定貼在這；要套用別組設定就貼進來按「匯入設定」" style="font-size:12px;"></textarea>
+    <div class="row" style="margin-top:8px;">
+      <button class="btn btn-sm btn-secondary" onclick="cfgExport()">⬇️ 匯出設定</button>
+      <button class="btn btn-sm btn-secondary" onclick="cfgImport()">⬆️ 匯入設定</button>
+      <button class="btn btn-sm btn-danger" onclick="cfgRestoreDefault()">↩️ 還原預設</button>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:#e74c3c;">
+    <div class="card-title" style="background:#fdecea;border-bottom-color:#e74c3c;">🗑️ 清除測試資料</div>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">清除所有簽到紀錄（試算表＋本機），操作前請三思。</p>
+    <button class="btn btn-sm" onclick="clearTestData()" style="background:#c0392b;color:white;font-weight:700;">⚠️ 清除全部簽到紀錄</button>
+    <div id="adm-clear-status" style="font-size:12px;margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- ══ 紀錄頁 ══ -->
+<div id="page-records" class="page">
+  <div class="card">
+    <div class="card-title">統計</div>
+    <div class="radio-group" id="rec-sess" style="margin-bottom:12px;"><!-- 動態場次 radio --></div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="rec-cnt-ci">0</div><div class="stat-label">已簽到</div></div>
+      <div class="stat-box"><div class="stat-num" id="rec-cnt-co">0</div><div class="stat-label">已簽退</div></div>
+      <div class="stat-box"><div class="stat-num" id="rec-cnt-reg">0</div><div class="stat-label">已報名</div></div>
+    </div>
+    <div class="row"><button class="btn btn-sm btn-primary" onclick="refreshRecords()">🔄 更新</button></div>
+  </div>
+
+  <div class="card" style="background:#e8f5f3;border-color:var(--teal);">
+    <div class="card-title">產生列印簽到表</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:10px;">選場次＋版本 → 系統寫入試算表「列印簽到表」分頁 → 開啟試算表匯出 PDF。</p>
+    <div class="radio-group" id="print-sess" style="margin-bottom:12px;"><!-- 動態場次 radio --></div>
+    <div class="row">
+      <button class="btn btn-sm btn-primary" onclick="buildPrint('credit')" id="print-btn-credit">🖨️ 積分版（含身分證/簽名）</button>
+      <button class="btn btn-sm btn-secondary" onclick="buildPrint('simple')" id="print-btn-simple">🖨️ 核銷版（精簡）</button>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <a id="print-sheet-link" href="#" target="_blank" class="btn btn-sm btn-secondary" style="display:none;text-decoration:none;">📄 開啟試算表匯出 PDF</a>
+    </div>
+    <div id="print-status" style="font-size:12px;margin-top:8px;color:var(--gray);"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">簽到紀錄</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>場次</th><th>姓名</th><th>報名</th><th>簽到</th><th>簽退</th></tr></thead>
+        <tbody id="rec-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 管理員登入 modal ══ -->
+<div id="admin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:14px;padding:24px;width:280px;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+    <div style="font-size:15px;font-weight:700;color:var(--teal);margin-bottom:14px;">🔐 管理員登入</div>
+    <input type="password" id="modal-pw" placeholder="請輸入密碼" style="width:100%;margin-bottom:10px;" onkeydown="if(event.key==='Enter')doModalLogin()">
+    <div id="modal-err" style="font-size:12px;color:var(--danger);margin-bottom:8px;display:none;">密碼錯誤</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="doModalLogin()" style="flex:1;padding:10px;">登入</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeAdminModal()" style="padding:10px 14px;">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ★★★ 活動設定區 ★★★  （以後辦新活動：改這裡＋倒名單，就能重用）
+// ═══════════════════════════════════════════════════════════════
+let EVENT = {
+  title:    'ICOPE 說明會簽到系統',                       // 頁首大標題
+  subtitle: '115年 長者內在能力檢測(ICOPE)說明會',         // 頁首副標題
+  host:     '衛生福利部國民健康署委託\n長庚科技大學辦理',   // 頁首右側主辦單位（\n＝換行；留空＝不顯示）
+  notice:   '🌿 溫馨小提醒\n別忘了完成簽到與簽退唷～\n完成簽退才算完整參與，謝謝您的配合 💚',   // 給民眾看的提醒橫幅（\n＝換行；留空＝不顯示）
+  surveyUrl:'',   // 回饋問卷網址（Google 表單）。留空＝不強制問卷，直接可簽退
+  regSheetUrl:'', // 報名表試算表網址（簽到系統從這裡讀名單）。留空＝用簽到系統本身這張表
+  adminKey: 'icope-briefing-2026',  // 管理開關通關密語（需與 apps-script.gs 的 ADMIN_KEY 一致）
+};
+
+// 每一「場」一個物件。以後辦新活動就改這個陣列（可增減場數）。
+//   key    : 內部代號（英文，不重複）
+//   short  : 場次簡稱（會寫進試算表，後端用它比對，勿與別場重複的關鍵字混淆）
+//   emoji  : 按鈕前的顏色點
+//   date   : [西元年, 月, 日]  → 用來「當天自動鎖定該場」
+//   checkoutOpen : 'HH:MM'  當天幾點開放簽退（此刻前只能簽到、之後鎖簽到開簽退）
+//   venue  : 地點（顯示與列印用）
+//   online : 是否含線上同步（僅顯示提示，簽到共用同一套）
+let SESSIONS = [
+  { key:'north',   short:'北部場', emoji:'🔵', date:[2026,7,24], checkoutOpen:'12:00',
+    venue:'集思臺大會議中心', online:false, timeText:'7/24(五) 9:30–12:30' },
+  { key:'east',    short:'東部場', emoji:'🟢', date:[2026,7,28], checkoutOpen:'13:50',
+    venue:'花蓮文化創意產業園區', online:true,  timeText:'7/28(二) 13:00–14:20（含線上）' },
+  { key:'central', short:'中部場', emoji:'🟡', date:[2026,7,30], checkoutOpen:'13:50',
+    venue:'國立臺中科技大學', online:true,  timeText:'7/30(四) 13:00–14:20（含線上）' },
+  { key:'south',   short:'南部場', emoji:'🔴', date:[2026,7,31], checkoutOpen:'15:30',
+    venue:'台灣文創訓練中心(TCCC)高雄信義館', online:false, timeText:'7/31(五) 13:00–16:00' },
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  設定區結束（以下為系統邏輯，一般不需更動）
+// ═══════════════════════════════════════════════════════════════
+
+function sess(i){ return SESSIONS[i]; }
+function sessLabel(i){ return SESSIONS[i].short; }
+
+// 全體共用的控制狀態（由管理員在管理頁設定，存雲端，所有裝置同步）
+let CONTROL = { activeSession: 0, ciOpen: true, coOpen: false };
+
+// ═══════════════════════════════════════════════
+//  名單（從 Apps Script 抓取；未設定或斷線時為空，一律走現場報名）
+// ═══════════════════════════════════════════════
+let ROSTER   = {};   // { north:[...], east:[...], ... }
+let UNIT_MAP = {};
+let CITY_MAP = {};
+
+async function loadNameList() {
+  const apiUrl = getApiUrl();
+  const el = document.getElementById('list-status');
+  if (!apiUrl) { el.textContent='⚠️ 尚未設定 API 網址（名單未載入，可現場報名）'; el.style.color='#e65100'; return; }
+  try {
+    const res  = await fetch(apiUrl + '?action=getRoster');
+    const json = await res.json();
+    if (json.success) {
+      ROSTER   = json.rosters || {};
+      UNIT_MAP = json.unitMap || {};
+      CITY_MAP = json.cityMap || {};
+      const total = Object.values(ROSTER).reduce((a,b)=>a+(b?b.length:0),0);
+      if (total>0) { el.style.display='none'; }
+      else { el.textContent='ℹ️ 尚無報名名單（可直接現場報名）'; el.style.color='var(--gray)'; }
+    }
+  } catch(e) {
+    console.warn('名單抓取失敗', e);
+    el.textContent='⚠️ 名單載入失敗（請確認網路，可現場報名）'; el.style.color='#e65100';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let ciSession = 0, coSession = 0;
+let sigDrawing = false, sigHasMark = false;
+let sigCtx, sigCanvas;
+let _pendingTab = null;
+
+// ── LocalStorage helpers ──
+function ls(k,d=null){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;}}
+function lsSave(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function records(){return ls('icopebf_records',[]);}
+function saveRecords(r){lsSave('icopebf_records',r);}
+function getPw(){return '02612809';}   // 管理員密碼固定
+function getApiUrl(){return ls('icopebf_api_url','https://script.google.com/macros/s/AKfycbwlKhaNhN_fmTt_LuWawoNPoVWNfP98q-0H76rbuHz6H8pgV6bnwHJCZtjw_4xJHWkX/exec');}   // 已內建 /exec 網址，參加者手機打開即連得上
+
+// ═══════════════════════════════════════════════
+//  動態產生場次按鈕 / radio
+// ═══════════════════════════════════════════════
+function buildSessionUI(){
+  // 簽到／簽退頁的按鈕保留在 DOM（隱藏），實際切換改由管理頁控制
+  document.getElementById('ci-sess-btns').innerHTML = SESSIONS.map((s,i)=>`<button class="sess-btn" id="ci-s${i}">${s.emoji} ${s.short}</button>`).join('');
+  document.getElementById('co-sess-btns').innerHTML = SESSIONS.map((s,i)=>`<button class="sess-btn" id="co-s${i}">${s.emoji} ${s.short}</button>`).join('');
+
+  // 管理頁：場次選擇按鈕（設定目前場次）
+  document.getElementById('adm-sess-btns').innerHTML = SESSIONS.map((s,i)=>`<button class="sess-btn" id="adm-s${i}" onclick="setActiveSession(${i})">${s.emoji} ${s.short}<br><span style="font-size:11px;font-weight:400;">${s.timeText}</span></button>`).join('');
+
+  const radios = (name,checkedVal,extra='')=>SESSIONS.map((s,i)=>`<label><input type="radio" name="${name}" value="${i}"${i===checkedVal?' checked':''} ${extra}> ${s.short}</label>`).join('');
+  document.getElementById('rec-sess').innerHTML = radios('rec-sess-r',0,'onchange="refreshRecords()"') + `<label><input type="radio" name="rec-sess-r" value="all" onchange="refreshRecords()"> 全部</label>`;
+  document.getElementById('print-sess').innerHTML = SESSIONS.map((s,i)=>`<label><input type="radio" name="print-sess-r" value="${i}"${i===0?' checked':''}> ${s.short}</label>`).join('');
+}
+
+// ── 目前場次 / 開關（管理頁設定 → 存雲端 → 所有裝置同步）──
+function getActiveSession(){ return CONTROL.activeSession||0; }
+
+// 讀取雲端控制狀態並套用（所有裝置定時呼叫）
+async function loadControl(){
+  const apiUrl=getApiUrl();
+  if(!apiUrl){ applyControl(); return; }
+  try{
+    const res=await fetch(apiUrl+'?action=getControl');
+    const json=await res.json();
+    if(json.success && json.control){ CONTROL=Object.assign(CONTROL,json.control); applyControl(); }
+  }catch(e){ console.warn('讀取控制狀態失敗',e); }
+}
+
+// 管理員變更 → 先更新自己畫面 → 推送雲端（全體生效）
+async function pushControl(patch){
+  CONTROL=Object.assign({}, CONTROL, patch);
+  applyControl();
+  const apiUrl=getApiUrl();
+  if(!apiUrl){ alert('⚠️ 尚未設定 Apps Script 網址，開關無法同步給其他人！請先到上方設定並儲存網址。'); return; }
+  try{
+    const res=await fetch(apiUrl,{method:'POST',body:JSON.stringify({action:'setControl',key:EVENT.adminKey,control:CONTROL})});
+    try{ const j=await res.json(); if(j&&j.control){ CONTROL=Object.assign(CONTROL,j.control); applyControl(); } }catch(_){}
+  }catch(e){ alert('⚠️ 同步失敗，請確認網路連線後再試'); }
+}
+function setActiveSession(i){ pushControl({activeSession:i}); }
+function setCiOpen(v){ pushControl({ciOpen:v}); }
+function setCoOpen(v){ pushControl({coOpen:v}); }
+
+// 套用控制狀態到畫面
+let _lastActive=null;
+function applyControl(){
+  const i=CONTROL.activeSession||0;
+  ciSession=i; coSession=i;
+  const label=`${sess(i).emoji} ${sess(i).short}　${sess(i).timeText}`;
+  const cib=document.getElementById('ci-auto-sess-badge'); if(cib){ cib.textContent=label; cib.style.display='block'; }
+  const cob=document.getElementById('co-auto-sess-badge'); if(cob){ cob.textContent=label; cob.style.display='block'; }
+  SESSIONS.forEach((s,j)=>{const b=document.getElementById('adm-s'+j); if(b) b.classList.toggle('selected',j===i);});
+  const cur=document.getElementById('adm-sess-current'); if(cur) cur.textContent='✅ 目前場次：'+sess(i).short+'（'+sess(i).timeText+'）';
+  // 只有在「場次真的變了」才清空姓名/問卷，避免定時同步時洗掉使用者正在輸入的內容
+  if(_lastActive!==i){ _lastActive=i; updateNameDropdown(''); clearNameStatus(); resetSurveyStep(); }
+  updateCiLockUI();
+  updateCoLockUI();
+  updateAdmControlStatus();
+}
+
+// ═══════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  else document.querySelectorAll('.tab-btn').forEach(b=>{if(b.textContent.includes(id==='checkin'?'簽到':id==='checkout'?'簽退':id==='admin'?'管理':'紀錄'))b.classList.add('active');});
+  if(id==='records') refreshRecords();
+  if(id==='admin') refreshAdmin();
+  if(id==='checkout') updateCoLockUI();
+  if(id==='checkin') updateCiLockUI();
+  checkApiWarn();
+}
+function requireAdmin(id, btn) {
+  _pendingTab = {id, btn};
+  document.getElementById('modal-pw').value='';
+  document.getElementById('modal-err').style.display='none';
+  document.getElementById('admin-modal').style.display='flex';
+  setTimeout(()=>document.getElementById('modal-pw').focus(),100);
+}
+function doModalLogin(){
+  const pw = document.getElementById('modal-pw').value;
+  if(pw===getPw()){
+    document.getElementById('admin-modal').style.display='none';
+    if(_pendingTab) switchTab(_pendingTab.id, _pendingTab.btn);
+  } else {
+    document.getElementById('modal-err').style.display='block';
+    document.getElementById('modal-pw').value='';
+  }
+}
+function closeAdminModal(){ document.getElementById('admin-modal').style.display='none'; }
+
+// ═══════════════════════════════════════════════
+//  自訂下拉 + 報名狀態
+// ═══════════════════════════════════════════════
+function getCurrentList(){ return ROSTER[sess(ciSession).key] || []; }
+
+function onNameInput(){
+  const val = document.getElementById('ci-name').value.trim();
+  updateNameDropdown(val);
+  checkNameStatus(val);
+}
+function updateNameDropdown(val){
+  const dd = document.getElementById('name-dropdown');
+  const list = getCurrentList();
+  const filtered = val.length>0 ? list.filter(n=>n.includes(val)) : [];
+  if(filtered.length===0){dd.style.display='none';return;}
+  dd.innerHTML = filtered.map(n=>`<div class="name-option" onmousedown="selectName('${n}')">${n}</div>`).join('');
+  dd.style.display='block';
+}
+function selectName(name){
+  document.getElementById('ci-name').value=name;
+  document.getElementById('name-dropdown').style.display='none';
+  const unit=UNIT_MAP[name];
+  if(unit) document.getElementById('ci-unit').value=unit;
+  checkNameStatus(name);
+}
+function hideDropdown(){ setTimeout(()=>{document.getElementById('name-dropdown').style.display='none';},150); }
+
+function checkNameStatus(name){
+  const el=document.getElementById('name-status');
+  const btn=document.getElementById('ci-submit-btn');
+  if(!name){clearNameStatus();return;}
+  const list=getCurrentList();
+  const found=list.includes(name);
+  el.className='name-status '+(found?'ok':'ng');
+  el.textContent=found?'✅ 已確認報名，歡迎參加！':'ℹ️ 此姓名不在名單中，可直接以「現場報名」完成報到';
+  btn.disabled=false;
+  // 服務單位：已報名者背景自動帶入（並顯示確認資訊）；現場報名者顯示欄位請其填寫
+  const unitRow=document.getElementById('ci-unit-row');
+  const unitInput=document.getElementById('ci-unit');
+  const info=document.getElementById('ci-reg-info');
+  if(found){
+    if(unitRow) unitRow.style.display='none';
+    const u=UNIT_MAP[name]||'', c=CITY_MAP[name]||'';
+    if(unitInput && u) unitInput.value=u;   // 背景帶入 → 研習證明會用到
+    if(info){
+      let h='';
+      if(u) h+='🏢 服務單位：'+u+'　<span style="color:#6b7c7a;font-weight:400;">（研習證明用）</span>';
+      if(c) h+=(h?'<br>':'')+'🏙️ 縣市：'+c;
+      if(!u&&!c) h='';
+      info.innerHTML=h; info.style.display=h?'block':'none';
+    }
+  } else {
+    if(unitRow) unitRow.style.display='block';
+    if(info) info.style.display='none';
+  }
+}
+function clearNameStatus(){
+  const el=document.getElementById('name-status');
+  el.className='name-status'; el.textContent='';
+  document.getElementById('ci-submit-btn').disabled=false;
+  const unitRow=document.getElementById('ci-unit-row'); if(unitRow) unitRow.style.display='none';
+  const info=document.getElementById('ci-reg-info'); if(info) info.style.display='none';
+}
+// 身份證欄位：僅「護理人員」選取時出現（申請繼續教育積分才需填）
+function onRoleChange(){
+  const role=document.getElementById('ci-role').value;
+  const row=document.getElementById('ci-idno-row');
+  if(row) row.style.display=(role.indexOf('護理')>=0)?'block':'none';
+}
+
+// 台灣身份證檢查碼驗證（key 錯任何一碼幾乎都抓得到，比只看長度可靠）
+function isValidTwId(id){
+  id=(id||'').trim().toUpperCase();
+  if(!/^[A-Z][12]\d{8}$/.test(id)) return false;
+  const L={A:10,B:11,C:12,D:13,E:14,F:15,G:16,H:17,I:34,J:18,K:19,L:20,M:21,N:22,O:35,P:23,Q:24,R:25,S:26,T:27,U:28,V:29,W:32,X:30,Y:31,Z:33};
+  const n=L[id[0]];
+  let sum=Math.floor(n/10)+(n%10)*9;              // 英文字轉兩碼，權重 1、9
+  const w=[8,7,6,5,4,3,2,1,1];                     // 後 9 碼權重
+  for(let i=1;i<=9;i++){ sum+=parseInt(id[i],10)*w[i-1]; }
+  return sum%10===0;
+}
+// Email 即時提示（打錯格式馬上紅字）
+function onEmailInput(){
+  const v=document.getElementById('ci-email').value.trim();
+  const st=document.getElementById('ci-email-status');
+  if(!st) return;
+  if(!v){ st.style.display='none'; return; }
+  st.style.display='block';
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ st.textContent='✅ Email 格式正確'; st.style.color='#0a7c6e'; }
+  else { st.textContent='❌ Email 格式有誤（範例 example@mail.com）'; st.style.color='#c0392b'; }
+}
+// 一邊打一邊即時提示（少一碼 / key 錯 都會立刻顯示）
+function onIdnoInput(){
+  const el=document.getElementById('ci-idno');
+  el.value=el.value.toUpperCase();
+  const v=el.value.trim();
+  const st=document.getElementById('ci-idno-status');
+  if(!st) return;
+  if(!v){ st.style.display='none'; return; }
+  st.style.display='block';
+  if(!/^[A-Z]/.test(v)){ st.textContent='⚠️ 第 1 碼要是英文字母'; st.style.color='#e65100'; return; }
+  if(v.length<10){ st.textContent=`⚠️ 身份證共 10 碼，目前只有 ${v.length} 碼（還差 ${10-v.length} 碼）`; st.style.color='#e65100'; return; }
+  if(isValidTwId(v)){ st.textContent='✅ 格式正確'; st.style.color='#0a7c6e'; }
+  else { st.textContent='❌ 這個號碼檢核不過，可能 key 錯了，請再核對一次'; st.style.color='#c0392b'; }
+}
+
+// ═══════════════════════════════════════════════
+//  SIGNATURE
+// ═══════════════════════════════════════════════
+function initSig(){
+  sigCanvas=document.getElementById('sigCanvas');
+  sigCtx=sigCanvas.getContext('2d');
+  const wrap=document.getElementById('ci-sig-wrap');
+  const dpr=Math.min(window.devicePixelRatio||1,1.5);
+  sigCanvas.width=wrap.clientWidth*dpr;
+  sigCanvas.height=200*dpr;
+  sigCtx.scale(dpr,dpr);
+  sigCtx.strokeStyle='#0a7c6e';
+  sigCtx.lineWidth=2.5; sigCtx.lineCap='round'; sigCtx.lineJoin='round';
+  const getPos=e=>{const r=sigCanvas.getBoundingClientRect();const s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*sigCanvas.width/(r.width*dpr),y:(s.clientY-r.top)*sigCanvas.height/(r.height*dpr)};};
+  sigCanvas.addEventListener('mousedown',e=>{sigDrawing=true;const p=getPos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);});
+  sigCanvas.addEventListener('mousemove',e=>{if(!sigDrawing)return;const p=getPos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigHasMark=true;updateSigHint();});
+  sigCanvas.addEventListener('mouseup',()=>sigDrawing=false);
+  sigCanvas.addEventListener('touchstart',e=>{e.preventDefault();sigDrawing=true;const p=getPos(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);},{passive:false});
+  sigCanvas.addEventListener('touchmove',e=>{e.preventDefault();if(!sigDrawing)return;const p=getPos(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigHasMark=true;updateSigHint();},{passive:false});
+  sigCanvas.addEventListener('touchend',()=>sigDrawing=false);
+}
+function updateSigHint(){document.getElementById('sigHint').style.opacity=sigHasMark?'0':'1';}
+function clearSig(){if(sigCtx)sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);sigHasMark=false;updateSigHint();}
+function getSigData(){
+  if(!sigHasMark) return null;
+  // 先在原 canvas 筆跡底下墊白底
+  sigCtx.save();
+  sigCtx.globalCompositeOperation='destination-over';
+  sigCtx.fillStyle='#ffffff';
+  sigCtx.fillRect(0,0,sigCanvas.width,sigCanvas.height);
+  sigCtx.restore();
+  // 縮圖後再輸出：最大寬 380px、JPEG 0.6 → 檔案更小、上傳更快省流量
+  const maxW=380;
+  const scale=Math.min(1, maxW/sigCanvas.width);
+  const tw=Math.max(1,Math.round(sigCanvas.width*scale));
+  const th=Math.max(1,Math.round(sigCanvas.height*scale));
+  const tmp=document.createElement('canvas');
+  tmp.width=tw; tmp.height=th;
+  const tctx=tmp.getContext('2d');
+  tctx.fillStyle='#ffffff'; tctx.fillRect(0,0,tw,th);
+  tctx.drawImage(sigCanvas,0,0,tw,th);
+  return tmp.toDataURL('image/jpeg',0.6);
+}
+
+// ═══════════════════════════════════════════════
+//  CHECKIN SUBMIT
+// ═══════════════════════════════════════════════
+function showAlert(id,type,msg){
+  const el=document.getElementById(id);
+  el.className='alert '+type+' show'; el.textContent=msg;
+  setTimeout(()=>el.classList.remove('show'),5000);
+}
+async function fetchWithTimeout(url,opts={},ms=25000){
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),ms);
+  try{ return await fetch(url,{...opts,signal:ctrl.signal}); }
+  finally{ clearTimeout(timer); }
+}
+
+async function submitCheckin(){
+  const name=document.getElementById('ci-name').value.trim();
+  if(!name){showAlert('ci-alert','error','請輸入姓名');return;}
+
+  const list=getCurrentList();
+  const isRegistered=list.includes(name);
+  const email=document.getElementById('ci-email').value.trim();
+  const idno=document.getElementById('ci-idno').value.trim().toUpperCase();
+  const role=document.getElementById('ci-role').value;
+
+  if(!isRegistered){
+    if(!confirm('此姓名不在報名名單中。\n是否以「現場報名」方式完成報到？')) return;
+    if(!document.getElementById('ci-unit').value.trim()){
+      showAlert('ci-alert','error','現場報名請填寫服務單位');
+      return;
+    }
+  }
+  // 防呆：身份證有填才檢查。先看長度/格式，再看檢查碼（抓少一碼、key 錯）
+  if(idno){
+    if(!/^[A-Z][12]\d{8}$/.test(idno)){
+      showAlert('ci-alert','error','身份證需 10 碼（1 碼英文＋9 碼數字），請確認沒有少打或多打');
+      return;
+    }
+    if(!isValidTwId(idno)){
+      if(!confirm('這個身份證字號檢核不通過，很可能 key 錯了。\n（繼續教育積分需要正確號碼）\n\n確定要用這個號碼嗎？')) return;
+    }
+  }
+  // 防呆：Email 有填才檢查格式
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showAlert('ci-alert','error','Email 格式有誤（範例 example@mail.com）。不需研習證明可留空');
+    return;
+  }
+
+  const sig=getSigData();
+  if(!sig){showAlert('ci-alert','error','請完成電子簽名');return;}
+
+  const unit=document.getElementById('ci-unit').value.trim();
+  const now=new Date().toLocaleString('zh-TW');
+  const sessionLabel=sessLabel(ciSession);
+
+  // 本機備份（同人同場只保留一筆 → 不重複）
+  const recs=records();
+  const exists=recs.find(r=>r.session===ciSession&&r.name===name);
+  if(exists){exists.checkin=now;exists.sig=sig;exists.unit=unit;exists.idno=idno;exists.role=role;exists.email=email;exists.registered=isRegistered;}
+  else{recs.push({id:Date.now(),session:ciSession,name,unit,idno,role,email,checkin:now,checkout:null,sig,registered:isRegistered});}
+  saveRecords(recs);
+
+  // 雲端上傳（後端會依「場次＋姓名」找既有列更新，不會新增重複列）
+  const apiUrl=getApiUrl();
+  let cloudOk=true, duplicate=false;
+  if(apiUrl){
+    document.getElementById('loading-overlay').classList.add('show');
+    const sbtn=document.getElementById('ci-submit-btn');
+    const sbtnTxt=sbtn.textContent; sbtn.disabled=true; sbtn.textContent='⏳ 上傳中…';
+    try{
+      const res=await fetchWithTimeout(apiUrl,{method:'POST',body:JSON.stringify({action:'checkin',session:sessionLabel,name,unit,idno,role,checkinTime:now,signature:sig,registered:isRegistered,onsite:!isRegistered,email})});
+      try{ const json=await res.json(); if(json){ if(json.success===false) cloudOk=false; if(json.duplicate) duplicate=true; } }catch(_){}
+    }catch(e){console.warn('雲端上傳失敗',e);cloudOk=false;}
+    document.getElementById('loading-overlay').classList.remove('show');
+    sbtn.disabled=false; sbtn.textContent=sbtnTxt;
+  }
+
+  if(apiUrl&&!cloudOk){
+    const back=records();
+    const i=back.findIndex(r=>r.session===ciSession&&r.name===name);
+    if(i>=0){ if(exists){back[i].checkin=null;} else {back.splice(i,1);} saveRecords(back); }
+    showAlert('ci-alert','error','⚠️ 上傳失敗，資料尚未送出！請確認網路連線後，再按一次「確認簽到」');
+    return;
+  }
+
+  // 清空欄位 + 大大的成功畫面
+  document.getElementById('ci-name').value='';
+  document.getElementById('ci-unit').value='';
+  document.getElementById('ci-idno').value='';
+  document.getElementById('ci-role').value='';
+  document.getElementById('ci-email').value='';
+  onRoleChange();
+  clearNameStatus();
+  clearSig();
+  showCheckinSuccess(name, duplicate);
+}
+
+let _ciSuccessTimer=null;
+function showCheckinSuccess(name, dup){
+  const el=document.getElementById('checkin-success');
+  el.style.display='flex';
+  document.getElementById('ci-success-title').textContent = dup?'已更新簽到！':'簽到完成！';
+  document.getElementById('ci-success-name').textContent = name+' 您好';
+  document.getElementById('ci-success-sub').textContent = dup?'您先前已簽到過，已為您更新資料（沒有重複建立）':'感謝您的參與 🌿';
+  let sec=4;
+  const cd=document.getElementById('ci-success-countdown');
+  cd.textContent=`${sec} 秒後自動關閉`;
+  clearInterval(_ciSuccessTimer);
+  _ciSuccessTimer=setInterval(()=>{ sec--; if(sec<=0){clearInterval(_ciSuccessTimer);closeCheckinSuccess();} else cd.textContent=`${sec} 秒後自動關閉`; },1000);
+}
+function closeCheckinSuccess(){ clearInterval(_ciSuccessTimer); document.getElementById('checkin-success').style.display='none'; }
+
+// ═══════════════════════════════════════════════
+//  CHECKOUT — 問卷步驟（surveyUrl 為空時直接可簽退）
+// ═══════════════════════════════════════════════
+function hasSurvey(){ return !!(EVENT.surveyUrl && EVENT.surveyUrl.trim()); }
+function onSurveyOpen(){
+  sessionStorage.setItem('icopebf_survey_opened','1');
+  setTimeout(()=>showSurveyConfirm(), 1500);
+}
+function showSurveyConfirm(){
+  const el=document.getElementById('co-survey-confirm');
+  if(el){ el.style.display='block'; el.style.animation='fadeIn 0.4s ease'; }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&sessionStorage.getItem('icopebf_survey_opened')) showSurveyConfirm();
+});
+window.addEventListener('pageshow',()=>{
+  if(sessionStorage.getItem('icopebf_survey_opened')) showSurveyConfirm();
+});
+function toggleSurveyDone(){
+  const cb = document.getElementById('co-survey-done');
+  cb.checked = !cb.checked;
+  const box = document.getElementById('co-survey-check-box');
+  const label = box.closest('label');
+  const txt = document.getElementById('co-survey-label');
+  if(cb.checked){
+    box.textContent='✓'; box.style.background='#0a7c6e'; box.style.borderColor='#0a7c6e';
+    box.style.color='white'; box.style.fontWeight='900';
+    label.style.background='#e8f5f3'; label.style.borderColor='#0a7c6e'; label.style.boxShadow='0 0 0 3px rgba(10,124,110,0.2)';
+    if(txt){ txt.style.color='#0a7c6e'; txt.style.fontSize='16px'; }
+  } else {
+    box.textContent=''; box.style.background='white'; box.style.borderColor='#ccc'; box.style.boxShadow='';
+    label.style.background='white'; label.style.borderColor='#f57c00'; label.style.boxShadow='';
+    if(txt){ txt.style.color='#9e9e9e'; txt.style.fontSize='15px'; }
+  }
+  updateCoSubmitBtn();
+}
+function updateCoSubmitBtn(){
+  const done = hasSurvey() ? document.getElementById('co-survey-done').checked : true;
+  const btn = document.getElementById('co-submit-btn');
+  btn.disabled = !done;
+  btn.style.opacity = done ? '1' : '0.5';
+  btn.title = done ? '' : '請先完成回饋問卷';
+}
+
+// ═══════════════════════════════════════════════
+//  CHECKOUT LOCK
+// ═══════════════════════════════════════════════
+function updateCoLockUI(){
+  const open=CONTROL.coOpen;
+  const lock=document.getElementById('co-locked');
+  const form=document.getElementById('co-form');
+  const survey=document.getElementById('co-survey-card');
+  lock.style.display=open?'none':'block';
+  form.style.display=open?'block':'none';
+  if(survey) survey.style.display=(open&&hasSurvey())?'block':'none';
+  if(open){ updateCoSubmitBtn(); }
+  else{
+    const msg=document.getElementById('co-locked-msg');
+    if(msg) msg.innerHTML='簽退尚未開放，請先完成「簽到」。<br>開放後再回到此頁即可簽退。';
+  }
+}
+
+async function submitCheckout(){
+  const name=document.getElementById('co-name').value.trim();
+  if(!name){showAlert('co-alert','error','請輸入姓名');return;}
+  const now=new Date().toLocaleString('zh-TW');
+  const sessionLabel=sessLabel(coSession);
+
+  const recs=records();
+  const rec=recs.find(r=>r.session===coSession&&r.name===name&&r.checkin);
+  if(rec){rec.checkout=now;saveRecords(recs);}
+
+  const apiUrl=getApiUrl();
+  let netErr=false, already=false, notFound=false;
+  if(apiUrl){
+    document.getElementById('loading-overlay').classList.add('show');
+    const cbtn=document.getElementById('co-submit-btn');
+    const cbtnTxt=cbtn.textContent; cbtn.disabled=true; cbtn.textContent='⏳ 上傳中…';
+    try{
+      const res=await fetchWithTimeout(apiUrl,{method:'POST',body:JSON.stringify({action:'checkout',session:sessionLabel,name,checkoutTime:now})});
+      try{const j=await res.json(); if(j){ if(j.already) already=true; else if(j.updated===false) notFound=true; }}catch(_){}
+    }catch(e){console.warn('雲端簽退失敗',e);netErr=true;}
+    document.getElementById('loading-overlay').classList.remove('show');
+    cbtn.disabled=false; cbtn.textContent=cbtnTxt;
+  }
+  if(netErr){ showAlert('co-alert','error','⚠️ 網路問題，簽退尚未送出，請再試一次');return; }
+  if(notFound){ showAlert('co-alert','error','⚠️ 查無您的簽到紀錄，請確認已完成「簽到」，或洽現場工作人員');return; }
+  // already＝已簽退過：不重複建立，仍給明確成功提示
+  document.getElementById('co-name').value='';
+  resetSurveyStep();
+  showCheckoutSuccess(name, already);
+}
+
+let _coSuccessTimer=null;
+function showCheckoutSuccess(name, already){
+  const el=document.getElementById('checkout-success');
+  el.style.display='flex';
+  document.getElementById('co-success-title').textContent = already?'您已簽退過！':'簽退完成！';
+  document.getElementById('co-success-name').textContent=name+' 您好';
+  const subEl=document.querySelector('#checkout-success div[style*="0.65"]');
+  if(subEl) subEl.textContent = already?'先前已完成簽退（沒有重複建立）':'感謝您今天的參與 🌿';
+  let sec=5;
+  document.getElementById('co-success-countdown').textContent=`${sec} 秒後自動關閉`;
+  _coSuccessTimer=setInterval(()=>{
+    sec--;
+    if(sec<=0){clearInterval(_coSuccessTimer);closeCheckoutSuccess();}
+    else{document.getElementById('co-success-countdown').textContent=`${sec} 秒後自動關閉`;}
+  },1000);
+}
+function closeCheckoutSuccess(){
+  clearInterval(_coSuccessTimer);
+  document.getElementById('checkout-success').style.display='none';
+}
+function resetSurveyStep(){
+  sessionStorage.removeItem('icopebf_survey_opened');
+  const cb = document.getElementById('co-survey-done');
+  if(cb) cb.checked = false;
+  document.getElementById('co-survey-confirm').style.display='block';
+  const box = document.getElementById('co-survey-check-box');
+  box.textContent=''; box.style.background='white'; box.style.borderColor='#ccc';
+  const label = box.closest('label');
+  if(label){ label.style.background='white'; label.style.borderColor='#f57c00'; }
+  updateCoSubmitBtn();
+}
+
+// ═══════════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════════
+function refreshAdmin(){
+  document.getElementById('adm-api-url').value=getApiUrl();
+  updateAdmControlStatus();
+  cfgPopulateForm();
+  loadControl();   // 進管理頁時抓一次最新雲端狀態
+}
+function saveApiUrl(){
+  const url=document.getElementById('adm-api-url').value.trim();
+  lsSave('icopebf_api_url',url);
+  document.getElementById('adm-api-status').textContent=url?'✅ 已儲存 API 網址':'已清除 API 網址';
+  checkApiWarn();
+  updateAdmControlStatus();
+  if(url){ loadNameList(); loadControl(); }
+}
+// 更新管理頁「簽到/簽退 開關」按鈕與狀態
+function updateAdmControlStatus(){
+  const ciOn=CONTROL.ciOpen, coOn=CONTROL.coOpen;
+  const a=document.getElementById('ci-open-btn'), b=document.getElementById('ci-close-btn');
+  const c=document.getElementById('co-open-btn'), e=document.getElementById('co-close-btn');
+  if(a&&b){ a.className='btn switch-btn'+(ciOn?' on':''); b.className='btn switch-btn'+(!ciOn?' off':''); }
+  if(c&&e){ c.className='btn switch-btn'+(coOn?' on':''); e.className='btn switch-btn'+(!coOn?' off':''); }
+  const cs=document.getElementById('ci-open-state'); if(cs){ cs.textContent=ciOn?'🟢 開放中':'🔴 已關閉'; cs.style.color=ciOn?'#0a7c6e':'#c0392b'; }
+  const os=document.getElementById('co-open-state'); if(os){ os.textContent=coOn?'🟢 開放中':'🔴 已關閉'; os.style.color=coOn?'#0a7c6e':'#c0392b'; }
+  const hint=document.getElementById('adm-ctrl-hint');
+  if(hint) hint.textContent=getApiUrl()?'✅ 開關會即時同步到所有掃 QR 的參加者手機。':'⚠️ 尚未設定 Apps Script 網址，開關只會影響這台、無法同步給大家。';
+}
+async function testApi(){
+  const url=getApiUrl();
+  if(!url){document.getElementById('adm-api-status').textContent='❌ 尚未設定網址';return;}
+  document.getElementById('adm-api-status').textContent='測試中…';
+  try{
+    const r=await fetch(url); const j=await r.json();
+    document.getElementById('adm-api-status').textContent=j.status==='ok'?'✅ 連線正常':'⚠️ 回應異常';
+  }catch(e){document.getElementById('adm-api-status').textContent='❌ 連線失敗：'+e.message;}
+}
+function checkApiWarn(){
+  const el=document.getElementById('api-warn');
+  if(el) el.classList.toggle('show',!getApiUrl());
+}
+function getAdmSess(n){return parseInt(document.querySelector(`input[name="${n}"]:checked`).value);}
+function updateCiLockUI(){
+  const open = CONTROL.ciOpen;
+  document.getElementById('ci-locked').style.display = open ? 'none' : 'block';
+  document.getElementById('ci-content').style.display = open ? 'block' : 'none';
+  const guide = document.getElementById('ci-locked-guide');
+  const title = document.getElementById('ci-locked-title');
+  const msg   = document.getElementById('ci-locked-msg');
+  if (!open) {
+    if (CONTROL.coOpen) {   // 簽到關但簽退開 → 引導去簽退
+      if (title) title.textContent = '簽到已結束';
+      if (msg)   msg.textContent   = '現在是簽退時間，請改至「簽退」。';
+      if (guide) guide.style.display = 'block';
+    } else {
+      if (title) title.textContent = '簽到尚未開放';
+      if (msg)   msg.textContent   = '請稍候，或洽現場工作人員';
+      if (guide) guide.style.display = 'none';
+    }
+  }
+}
+async function clearTestData(){
+  if(!confirm('確定要清除所有簽到紀錄嗎？\n此操作無法復原！')) return;
+  if(!confirm('再次確認：所有簽到資料（含試算表）將被刪除，確定嗎？')) return;
+  const st=document.getElementById('adm-clear-status');
+  st.style.color='var(--gray)'; st.textContent='清除中…';
+  saveRecords([]);
+  const apiUrl=getApiUrl();
+  if(apiUrl){
+    try{
+      await fetch(apiUrl,{method:'POST',body:JSON.stringify({action:'clearRecords'})});
+      st.style.color='#0a7c6e'; st.textContent='✅ 已清除所有簽到紀錄（本機＋試算表）';
+    }catch(e){
+      st.style.color='#e65100'; st.textContent='⚠️ 本機已清除，試算表清除失敗，請手動刪除';
+    }
+  } else {
+    st.style.color='#0a7c6e'; st.textContent='✅ 本機紀錄已清除（未設定 API，試算表未異動）';
+  }
+  refreshRecords();
+}
+// ═══════════════════════════════════════════════
+//  RECORDS
+// ═══════════════════════════════════════════════
+function normalizeRemoteRec(r){
+  // 依 short 名稱找 session index
+  let s = SESSIONS.findIndex(x=>x.short===r.session);
+  if(s<0){ // 數字或找不到時退回 0
+    const n=parseInt(r.session); s=isNaN(n)?0:n;
+  }
+  const fmt=t=>{
+    if(!t) return '';
+    if(typeof t==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(t)){const d=new Date(t);if(!isNaN(d))return d.toLocaleString('zh-TW');}
+    return t;
+  };
+  const reg=r.registered;
+  return {
+    session:s, name:r.name, unit:r.unit, role:r.role,
+    checkin:fmt(r.checkin), checkout:fmt(r.checkout),
+    registered:(reg===true||reg==='✅'||reg==='TRUE'||reg==='已報名'||reg==='Y')
+  };
+}
+async function refreshRecords(){
+  const el=document.querySelector('input[name="rec-sess-r"]:checked');
+  const sel=el?el.value:'all';
+  const tbody=document.getElementById('rec-tbody');
+  let allRecs=records();
+  const apiUrl=getApiUrl();
+  if(apiUrl){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#9fb3b0;padding:16px">⏳ 從試算表載入中…</td></tr>';
+    try{
+      const res=await fetch(apiUrl+'?action=getRecords');
+      const json=await res.json();
+      if(json.success&&Array.isArray(json.records)){ allRecs=json.records.map(normalizeRemoteRec); }
+    }catch(e){ console.warn('紀錄抓取失敗，改用本機紀錄',e); }
+  }
+  const recs=allRecs.filter(r=>sel==='all'||r.session===parseInt(sel));
+  document.getElementById('rec-cnt-ci').textContent=recs.filter(r=>r.checkin).length;
+  document.getElementById('rec-cnt-co').textContent=recs.filter(r=>r.checkout).length;
+  document.getElementById('rec-cnt-reg').textContent=recs.filter(r=>r.registered).length;
+  if(!recs.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#9fb3b0;padding:16px">尚無紀錄</td></tr>';return;}
+  tbody.innerHTML=recs.map(r=>`<tr>
+    <td>${(SESSIONS[r.session]?SESSIONS[r.session].short:r.session).replace('部場','')}</td>
+    <td>${r.name}</td>
+    <td>${r.registered?'<span class="badge badge-ok">✅ 已報名</span>':'<span class="badge badge-ng">現場</span>'}</td>
+    <td style="font-size:11px">${r.checkin||'--'}</td>
+    <td style="font-size:11px">${r.checkout||'--'}</td>
+  </tr>`).join('');
+}
+
+async function buildPrint(type){
+  const apiUrl=getApiUrl();
+  if(!apiUrl){showPrintStatus('error','❌ 尚未設定 API 網址，請至管理頁設定');return;}
+  const s=getAdmSess('print-sess-r');
+  const bc=document.getElementById('print-btn-credit'), bs=document.getElementById('print-btn-simple');
+  bc.disabled=true; bs.disabled=true;
+  const label=(type==='simple')?'核銷版':'積分版';
+  showPrintStatus('','⏳ 產生「'+sessLabel(s)+' '+label+'」中…');
+  document.getElementById('print-sheet-link').style.display='none';
+  try{
+    const res=await fetch(apiUrl,{method:'POST',body:JSON.stringify({action:'buildPrint',printSession:sessLabel(s),printType:type})});
+    let url='';
+    try{ const j=await res.json(); if(j&&j.url) url=j.url; }catch(_){}
+    showPrintStatus('success','✅ 已產生「'+sessLabel(s)+' '+label+'」！請點下方按鈕開啟試算表，再匯出 PDF。');
+    const link=document.getElementById('print-sheet-link');
+    if(url) link.href=url;
+    link.style.display='inline-block';
+  }catch(e){
+    showPrintStatus('error','❌ 產生失敗，請確認網路與 API 設定');
+  }
+  bc.disabled=false; bs.disabled=false;
+}
+function showPrintStatus(type,msg){
+  const el=document.getElementById('print-status');
+  el.textContent=msg;
+  el.style.color=type==='success'?'#0a7c6e':type==='error'?'#c0392b':'var(--gray)';
+}
+
+// ═══════════════════════════════════════════════
+//  活動設定（雲端同步、後台可編輯）
+// ═══════════════════════════════════════════════
+function _nl2br(s){ return (s||'').split('\n').map(function(x){ return x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }).join('<br>'); }
+function keyOfShort(short){ return ({'北部場':'north','東部場':'east','中部場':'central','南部場':'south'})[short] || (short||'sess'); }
+
+// 依 EVENT/SESSIONS 重畫頁首、提醒、問卷等靜態文字
+function renderStaticTexts(){
+  document.getElementById('hdr-title').textContent=EVENT.title||'';
+  document.getElementById('hdr-sub').textContent=EVENT.subtitle||'';
+  document.title=EVENT.title||'簽到系統';
+  document.querySelectorAll('.notice-banner').forEach(function(b){
+    if(EVENT.notice){ b.innerHTML=_nl2br(EVENT.notice); b.classList.add('show'); }
+    else b.classList.remove('show');
+  });
+  const hostEl=document.getElementById('hdr-host');
+  if(hostEl){
+    if(EVENT.host){ hostEl.innerHTML=_nl2br(EVENT.host); hostEl.style.display='block'; }
+    else hostEl.style.display='none';
+  }
+  const link=document.getElementById('co-survey-link');
+  const card=document.getElementById('co-survey-card');
+  if(hasSurvey()){ if(link) link.href=EVENT.surveyUrl; }
+  else { if(card) card.style.display='none'; }
+}
+
+// 目前設定 → 純資料物件（存雲端 / 匯出模板用）
+function currentCfg(){
+  return {
+    title:EVENT.title, subtitle:EVENT.subtitle, host:EVENT.host, notice:EVENT.notice, surveyUrl:EVENT.surveyUrl, regSheetUrl:EVENT.regSheetUrl||'',
+    sessions: SESSIONS.map(function(s){ return {key:s.key,short:s.short,emoji:s.emoji,date:s.date.slice(),timeText:s.timeText,venue:s.venue,checkoutOpen:s.checkoutOpen}; })
+  };
+}
+let DEFAULT_CFG = null;   // 啟動時快照，供「還原預設」
+
+// 套用一份設定（更新 EVENT/SESSIONS 並重畫）
+function applyConfig(cfg){
+  if(!cfg) return;
+  ['title','subtitle','host','notice','surveyUrl','regSheetUrl'].forEach(function(k){ if(cfg[k]!=null) EVENT[k]=cfg[k]; });
+  if(Array.isArray(cfg.sessions) && cfg.sessions.length){
+    SESSIONS = cfg.sessions.map(function(s,i){
+      let d = s.date;
+      if(typeof d==='string'){ const p=d.split('-').map(Number); d=[p[0]||2026,p[1]||1,p[2]||1]; }
+      if(!Array.isArray(d)) d=[2026,1,1];
+      return { key: s.key || keyOfShort(s.short) , short:s.short||('場次'+(i+1)), emoji:s.emoji||'🔵',
+               date:d, checkoutOpen:s.checkoutOpen||'12:00', venue:s.venue||'', timeText:s.timeText||'', online:!!s.online };
+    });
+  }
+  if(CONTROL.activeSession>=SESSIONS.length) CONTROL.activeSession=0;
+  buildSessionUI();
+  renderStaticTexts();
+  _lastActive=null;        // 讓 applyControl 重新套用場次
+  applyControl();
+}
+
+// 從雲端讀活動設定
+async function loadConfig(){
+  const apiUrl=getApiUrl();
+  if(!apiUrl) return;
+  try{
+    const r=await fetch(apiUrl+'?action=getConfig');
+    const j=await r.json();
+    if(j.success && j.config) applyConfig(j.config);
+  }catch(e){ console.warn('讀取活動設定失敗',e); }
+}
+// 管理員儲存活動設定 → 套用 + 推雲端
+async function pushConfig(cfg){
+  applyConfig(cfg);
+  const apiUrl=getApiUrl();
+  if(!apiUrl){ return {ok:false,msg:'尚未設定 Apps Script 網址，設定無法同步給大家'}; }
+  try{
+    await fetch(apiUrl,{method:'POST',body:JSON.stringify({action:'setConfig',key:EVENT.adminKey,config:cfg})});
+    return {ok:true};
+  }catch(e){ return {ok:false,msg:'同步失敗，請確認網路'}; }
+}
+
+// ── 後台「活動設定」表單 ──
+let _cfgSessions=[];   // 編輯中的場次陣列
+function _pad2(n){ return String(n).padStart(2,'0'); }
+function _dateToInput(d){ return d&&d.length===3 ? d[0]+'-'+_pad2(d[1])+'-'+_pad2(d[2]) : ''; }
+function _inputToDate(v){ const p=(v||'').split('-').map(Number); return (p.length===3&&p[0])?[p[0],p[1],p[2]]:[2026,1,1]; }
+
+function cfgPopulateForm(){
+  document.getElementById('cfg-title').value=EVENT.title||'';
+  document.getElementById('cfg-subtitle').value=EVENT.subtitle||'';
+  document.getElementById('cfg-host').value=EVENT.host||'';
+  document.getElementById('cfg-notice').value=EVENT.notice||'';
+  document.getElementById('cfg-survey').value=EVENT.surveyUrl||'';
+  document.getElementById('cfg-regurl').value=EVENT.regSheetUrl||'';
+  _cfgSessions=SESSIONS.map(function(s){ return {emoji:s.emoji,short:s.short,date:_dateToInput(s.date),venue:s.venue||'',timeText:s.timeText||'',checkoutOpen:s.checkoutOpen||'12:00'}; });
+  cfgRenderSessions();
+}
+function cfgReadSessionsFromDOM(){
+  const rows=document.querySelectorAll('#cfg-sessions .cfg-sess-row');
+  _cfgSessions=Array.prototype.map.call(rows,function(row){
+    const g=function(f){ const el=row.querySelector('[data-f="'+f+'"]'); return el?el.value:''; };
+    return {emoji:g('emoji')||'🔵',short:g('short'),date:g('date'),venue:g('venue'),timeText:g('timeText'),checkoutOpen:g('checkoutOpen')||'12:00'};
+  });
+}
+function cfgRenderSessions(){
+  const box=document.getElementById('cfg-sessions');
+  const lb='display:block;font-size:12px;font-weight:600;color:var(--gray);margin-bottom:4px;';
+  box.innerHTML=_cfgSessions.map(function(s,i){
+    return '<div class="cfg-sess-row" style="border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:12px;background:#fafefd;">'
+      +'<label style="'+lb+'">場次名稱（顏色＋簡稱）</label>'
+      +'<div class="row" style="align-items:center;">'
+      +'<input data-f="emoji" value="'+(s.emoji||'')+'" style="width:56px;text-align:center;">'
+      +'<input data-f="short" value="'+(s.short||'')+'" placeholder="如 北部場" style="flex:1;">'
+      +'<button class="btn btn-sm btn-danger" onclick="cfgDelSession('+i+')">刪</button>'
+      +'</div>'
+      +'<div style="margin-top:10px;"><label style="'+lb+'">活動日期</label><input data-f="date" type="date" value="'+(s.date||'')+'"></div>'
+      +'<div style="margin-top:10px;"><label style="'+lb+'">活動時間</label><input data-f="timeText" value="'+(s.timeText||'').replace(/"/g,'&quot;')+'" placeholder="如 7/24(五) 9:30–12:30"></div>'
+      +'<div style="margin-top:10px;"><label style="'+lb+'">活動地點</label><input data-f="venue" value="'+(s.venue||'').replace(/"/g,'&quot;')+'" placeholder="如 集思臺大會議中心"></div>'
+      +'<input data-f="checkoutOpen" type="hidden" value="'+(s.checkoutOpen||'12:00')+'">'
+      +'</div>';
+  }).join('') || '<div style="color:var(--gray);font-size:13px;">尚無場次，請按「＋ 新增場次」</div>';
+}
+function cfgAddSession(){ cfgReadSessionsFromDOM(); _cfgSessions.push({emoji:'🔵',short:'',date:'',venue:'',timeText:'',checkoutOpen:'12:00'}); cfgRenderSessions(); }
+function cfgDelSession(i){ cfgReadSessionsFromDOM(); _cfgSessions.splice(i,1); cfgRenderSessions(); }
+
+function cfgBuildFromForm(){
+  cfgReadSessionsFromDOM();
+  return {
+    title:document.getElementById('cfg-title').value.trim(),
+    subtitle:document.getElementById('cfg-subtitle').value.trim(),
+    host:document.getElementById('cfg-host').value,
+    notice:document.getElementById('cfg-notice').value,
+    surveyUrl:document.getElementById('cfg-survey').value.trim(),
+    regSheetUrl:document.getElementById('cfg-regurl').value.trim(),
+    sessions:_cfgSessions.filter(function(s){return (s.short||'').trim();}).map(function(s){
+      return {key:keyOfShort(s.short.trim()),short:s.short.trim(),emoji:(s.emoji||'🔵').trim(),date:_inputToDate(s.date),timeText:s.timeText,venue:s.venue,checkoutOpen:s.checkoutOpen||'12:00'};
+    })
+  };
+}
+async function cfgSave(){
+  const cfg=cfgBuildFromForm();
+  if(!cfg.title){ cfgStatus('error','活動標題不能空白'); return; }
+  if(!cfg.sessions.length){ cfgStatus('error','至少要有一個場次'); return; }
+  cfgStatus('','儲存中…');
+  const res=await pushConfig(cfg);
+  cfgPopulateForm();
+  if(res.ok) cfgStatus('ok','✅ 已儲存並同步給所有人');
+  else cfgStatus('error','⚠️ 已套用在本機，但同步失敗：'+(res.msg||''));
+}
+function cfgStatus(type,msg){
+  const el=document.getElementById('cfg-status');
+  el.textContent=msg; el.style.color=type==='ok'?'#0a7c6e':type==='error'?'#c0392b':'var(--gray)';
+}
+function cfgExport(){ document.getElementById('cfg-json').value=JSON.stringify(cfgBuildFromForm(),null,2); cfgStatus('ok','已匯出到下方，可全選複製保存為模板'); }
+async function cfgImport(){
+  let cfg;
+  try{ cfg=JSON.parse(document.getElementById('cfg-json').value); }
+  catch(e){ cfgStatus('error','貼上的內容不是有效的設定（JSON 格式錯誤）'); return; }
+  const res=await pushConfig(cfg);
+  cfgPopulateForm();
+  cfgStatus(res.ok?'ok':'error', res.ok?'✅ 已匯入並同步':'已套用本機，同步失敗：'+(res.msg||''));
+}
+async function cfgRestoreDefault(){
+  if(!confirm('確定要還原成程式內建的預設活動設定嗎？')) return;
+  const res=await pushConfig(JSON.parse(JSON.stringify(DEFAULT_CFG)));
+  cfgPopulateForm();
+  cfgStatus(res.ok?'ok':'error', res.ok?'✅ 已還原預設並同步':'已還原本機，同步失敗');
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('load', async ()=>{
+  DEFAULT_CFG = currentCfg();   // 快照內建預設
+  buildSessionUI();
+  initSig();
+  renderStaticTexts();
+  applyControl();          // 先用預設值渲染畫面
+  checkApiWarn();
+  await loadConfig();      // 從雲端取得活動設定（標題/場次/提醒…）
+  await loadControl();     // 從雲端取得目前場次與開關狀態
+  await loadNameList();
+
+  // 每 15 秒同步雲端控制狀態 → 管理員一改開關，參加者手機就會跟著變
+  setInterval(loadControl, 15000);
+});
+</script>
+</body>
+</html>
