@@ -222,6 +222,15 @@
       <input type="text" id="ci-unit" placeholder="請填寫服務單位">
     </div>
 
+    <!-- 參加方式：僅「含線上」的場次才出現（北/南純實體自動算實體） -->
+    <div class="form-group" id="ci-attend-row" style="display:none;">
+      <label>📍 參加方式（本場含線上，請選擇）</label>
+      <div class="sess-btns">
+        <button type="button" class="sess-btn" id="ci-attend-physical" onclick="setAttend('實體')">🏫 實體到場</button>
+        <button type="button" class="sess-btn" id="ci-attend-online" onclick="setAttend('線上')">💻 線上參加</button>
+      </div>
+    </div>
+
     <div class="form-group">
       <label>③ 電子簽名</label>
       <div class="sig-wrap" id="ci-sig-wrap">
@@ -384,6 +393,8 @@
       <div class="stat-box"><div class="stat-num" id="rec-cnt-ci">0</div><div class="stat-label">已簽到</div></div>
       <div class="stat-box"><div class="stat-num" id="rec-cnt-co">0</div><div class="stat-label">已簽退</div></div>
       <div class="stat-box"><div class="stat-num" id="rec-cnt-reg">0</div><div class="stat-label">已報名</div></div>
+      <div class="stat-box"><div class="stat-num" id="rec-cnt-phys">0</div><div class="stat-label">🏫 實體到場</div></div>
+      <div class="stat-box"><div class="stat-num" id="rec-cnt-online">0</div><div class="stat-label">💻 線上參加</div></div>
     </div>
     <div class="row"><button class="btn btn-sm btn-primary" onclick="refreshRecords()">🔄 更新</button></div>
   </div>
@@ -570,7 +581,7 @@ function applyControl(){
   SESSIONS.forEach((s,j)=>{const b=document.getElementById('adm-s'+j); if(b) b.classList.toggle('selected',j===i);});
   const cur=document.getElementById('adm-sess-current'); if(cur) cur.textContent='✅ 目前場次：'+sess(i).short+'（'+sess(i).timeText+'）';
   // 只有在「場次真的變了」才清空姓名/問卷，避免定時同步時洗掉使用者正在輸入的內容
-  if(_lastActive!==i){ _lastActive=i; updateNameDropdown(''); clearNameStatus(); resetSurveyStep(); }
+  if(_lastActive!==i){ _lastActive=i; updateNameDropdown(''); clearNameStatus(); resetSurveyStep(); updateAttendRow(); }
   updateCiLockUI();
   updateCoLockUI();
   updateAdmControlStatus();
@@ -678,6 +689,29 @@ function onRoleChange(){
   const role=document.getElementById('ci-role').value;
   const row=document.getElementById('ci-idno-row');
   if(row) row.style.display=(role.indexOf('護理')>=0)?'block':'none';
+}
+
+// 參加方式（實體/線上）：僅含線上的場次要選；純實體場自動算「實體」
+let attendType='實體';
+function setAttend(v){
+  attendType=v;
+  const p=document.getElementById('ci-attend-physical'), o=document.getElementById('ci-attend-online');
+  if(p) p.classList.toggle('selected', v==='實體');
+  if(o) o.classList.toggle('selected', v==='線上');
+}
+function updateAttendRow(){
+  const online=!!(sess(ciSession)&&sess(ciSession).online);
+  const row=document.getElementById('ci-attend-row');
+  if(!row) return;
+  if(online){
+    row.style.display='block';
+    attendType='';   // 混合場：清空，強制學員自己選
+    const p=document.getElementById('ci-attend-physical'), o=document.getElementById('ci-attend-online');
+    if(p) p.classList.remove('selected'); if(o) o.classList.remove('selected');
+  } else {
+    row.style.display='none';
+    attendType='實體';   // 純實體場自動算實體
+  }
 }
 
 // 台灣身份證檢查碼驗證（key 錯任何一碼幾乎都抓得到，比只看長度可靠）
@@ -808,6 +842,12 @@ async function submitCheckin(){
     return;
   }
 
+  // 含線上的場次：一定要選參加方式
+  if(sess(ciSession).online && attendType!=='實體' && attendType!=='線上'){
+    showAlert('ci-alert','error','請選擇參加方式（🏫 實體到場 / 💻 線上參加）');
+    return;
+  }
+
   const sig=getSigData();
   if(!sig){showAlert('ci-alert','error','請完成電子簽名');return;}
 
@@ -819,7 +859,7 @@ async function submitCheckin(){
   const recs=records();
   const exists=recs.find(r=>r.session===ciSession&&r.name===name);
   if(exists){exists.checkin=now;exists.sig=sig;exists.unit=unit;exists.idno=idno;exists.role=role;exists.email=email;exists.registered=isRegistered;}
-  else{recs.push({id:Date.now(),session:ciSession,name,unit,idno,role,email,checkin:now,checkout:null,sig,registered:isRegistered});}
+  else{recs.push({id:Date.now(),session:ciSession,name,unit,idno,role,email,attendType:(attendType||'實體'),checkin:now,checkout:null,sig,registered:isRegistered});}
   saveRecords(recs);
 
   // 雲端上傳（後端會依「場次＋姓名」找既有列更新，不會新增重複列）
@@ -830,7 +870,7 @@ async function submitCheckin(){
     const sbtn=document.getElementById('ci-submit-btn');
     const sbtnTxt=sbtn.textContent; sbtn.disabled=true; sbtn.textContent='⏳ 上傳中…';
     try{
-      const res=await fetchWithTimeout(apiUrl,{method:'POST',body:JSON.stringify({action:'checkin',session:sessionLabel,name,unit,idno,role,checkinTime:now,signature:sig,registered:isRegistered,onsite:!isRegistered,email})});
+      const res=await fetchWithTimeout(apiUrl,{method:'POST',body:JSON.stringify({action:'checkin',session:sessionLabel,name,unit,idno,role,checkinTime:now,signature:sig,registered:isRegistered,onsite:!isRegistered,email,attendType:(attendType||'實體')})});
       try{ const json=await res.json(); if(json){ if(json.success===false) cloudOk=false; if(json.duplicate) duplicate=true; } }catch(_){}
     }catch(e){console.warn('雲端上傳失敗',e);cloudOk=false;}
     document.getElementById('loading-overlay').classList.remove('show');
@@ -852,6 +892,7 @@ async function submitCheckin(){
   document.getElementById('ci-role').value='';
   document.getElementById('ci-email').value='';
   onRoleChange();
+  updateAttendRow();
   clearNameStatus();
   clearSig();
   showCheckinSuccess(name, duplicate);
@@ -1094,7 +1135,7 @@ function normalizeRemoteRec(r){
   };
   const reg=r.registered;
   return {
-    session:s, name:r.name, unit:r.unit, role:r.role,
+    session:s, name:r.name, unit:r.unit, role:r.role, attendType:r.attendType,
     checkin:fmt(r.checkin), checkout:fmt(r.checkout),
     registered:(reg===true||reg==='✅'||reg==='TRUE'||reg==='已報名'||reg==='Y')
   };
@@ -1117,6 +1158,8 @@ async function refreshRecords(){
   document.getElementById('rec-cnt-ci').textContent=recs.filter(r=>r.checkin).length;
   document.getElementById('rec-cnt-co').textContent=recs.filter(r=>r.checkout).length;
   document.getElementById('rec-cnt-reg').textContent=recs.filter(r=>r.registered).length;
+  document.getElementById('rec-cnt-phys').textContent=recs.filter(r=>r.checkin&&r.attendType!=='線上').length;
+  document.getElementById('rec-cnt-online').textContent=recs.filter(r=>r.checkin&&r.attendType==='線上').length;
   if(!recs.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#9fb3b0;padding:16px">尚無紀錄</td></tr>';return;}
   tbody.innerHTML=recs.map(r=>`<tr>
     <td>${(SESSIONS[r.session]?SESSIONS[r.session].short:r.session).replace('部場','')}</td>
@@ -1185,7 +1228,7 @@ function renderStaticTexts(){
 function currentCfg(){
   return {
     title:EVENT.title, subtitle:EVENT.subtitle, host:EVENT.host, notice:EVENT.notice, surveyUrl:EVENT.surveyUrl, regSheetUrl:EVENT.regSheetUrl||'',
-    sessions: SESSIONS.map(function(s){ return {key:s.key,short:s.short,emoji:s.emoji,date:s.date.slice(),timeText:s.timeText,venue:s.venue,checkoutOpen:s.checkoutOpen}; })
+    sessions: SESSIONS.map(function(s){ return {key:s.key,short:s.short,emoji:s.emoji,date:s.date.slice(),timeText:s.timeText,venue:s.venue,checkoutOpen:s.checkoutOpen,online:!!s.online}; })
   };
 }
 let DEFAULT_CFG = null;   // 啟動時快照，供「還原預設」
@@ -1244,14 +1287,15 @@ function cfgPopulateForm(){
   document.getElementById('cfg-notice').value=EVENT.notice||'';
   document.getElementById('cfg-survey').value=EVENT.surveyUrl||'';
   document.getElementById('cfg-regurl').value=EVENT.regSheetUrl||'';
-  _cfgSessions=SESSIONS.map(function(s){ return {emoji:s.emoji,short:s.short,date:_dateToInput(s.date),venue:s.venue||'',timeText:s.timeText||'',checkoutOpen:s.checkoutOpen||'12:00'}; });
+  _cfgSessions=SESSIONS.map(function(s){ return {emoji:s.emoji,short:s.short,date:_dateToInput(s.date),venue:s.venue||'',timeText:s.timeText||'',checkoutOpen:s.checkoutOpen||'12:00',online:!!s.online}; });
   cfgRenderSessions();
 }
 function cfgReadSessionsFromDOM(){
   const rows=document.querySelectorAll('#cfg-sessions .cfg-sess-row');
   _cfgSessions=Array.prototype.map.call(rows,function(row){
     const g=function(f){ const el=row.querySelector('[data-f="'+f+'"]'); return el?el.value:''; };
-    return {emoji:g('emoji')||'🔵',short:g('short'),date:g('date'),venue:g('venue'),timeText:g('timeText'),checkoutOpen:g('checkoutOpen')||'12:00'};
+    const chk=function(f){ const el=row.querySelector('[data-f="'+f+'"]'); return el?!!el.checked:false; };
+    return {emoji:g('emoji')||'🔵',short:g('short'),date:g('date'),venue:g('venue'),timeText:g('timeText'),checkoutOpen:g('checkoutOpen')||'12:00',online:chk('online')};
   });
 }
 function cfgRenderSessions(){
@@ -1268,6 +1312,7 @@ function cfgRenderSessions(){
       +'<div style="margin-top:10px;"><label style="'+lb+'">活動日期</label><input data-f="date" type="date" value="'+(s.date||'')+'"></div>'
       +'<div style="margin-top:10px;"><label style="'+lb+'">活動時間</label><input data-f="timeText" value="'+(s.timeText||'').replace(/"/g,'&quot;')+'" placeholder="如 7/24(五) 9:30–12:30"></div>'
       +'<div style="margin-top:10px;"><label style="'+lb+'">活動地點</label><input data-f="venue" value="'+(s.venue||'').replace(/"/g,'&quot;')+'" placeholder="如 集思臺大會議中心"></div>'
+      +'<div style="margin-top:10px;"><label style="font-size:14px;font-weight:600;color:var(--dark);display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" data-f="online" '+(s.online?'checked':'')+' style="width:18px;height:18px;"> 💻 此場含線上（簽到時出現 實體/線上 選項）</label></div>'
       +'<input data-f="checkoutOpen" type="hidden" value="'+(s.checkoutOpen||'12:00')+'">'
       +'</div>';
   }).join('') || '<div style="color:var(--gray);font-size:13px;">尚無場次，請按「＋ 新增場次」</div>';
@@ -1285,7 +1330,7 @@ function cfgBuildFromForm(){
     surveyUrl:document.getElementById('cfg-survey').value.trim(),
     regSheetUrl:document.getElementById('cfg-regurl').value.trim(),
     sessions:_cfgSessions.filter(function(s){return (s.short||'').trim();}).map(function(s){
-      return {key:keyOfShort(s.short.trim()),short:s.short.trim(),emoji:(s.emoji||'🔵').trim(),date:_inputToDate(s.date),timeText:s.timeText,venue:s.venue,checkoutOpen:s.checkoutOpen||'12:00'};
+      return {key:keyOfShort(s.short.trim()),short:s.short.trim(),emoji:(s.emoji||'🔵').trim(),date:_inputToDate(s.date),timeText:s.timeText,venue:s.venue,checkoutOpen:s.checkoutOpen||'12:00',online:!!s.online};
     })
   };
 }
