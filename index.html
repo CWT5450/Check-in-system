@@ -222,6 +222,25 @@
       <input type="text" id="ci-unit" placeholder="請填寫服務單位">
     </div>
 
+    <!-- 機構縣市／類型：現場報名（不在名單）才出現，供統計用 -->
+    <div class="form-group" id="ci-city-row" style="display:none;">
+      <label>🏙️ 機構縣市（現場報名填）</label>
+      <select id="ci-city">
+        <option value="">-- 請選擇 --</option>
+        <option>臺北市</option><option>新北市</option><option>桃園市</option><option>臺中市</option><option>臺南市</option><option>高雄市</option>
+        <option>基隆市</option><option>新竹市</option><option>新竹縣</option><option>苗栗縣</option><option>彰化縣</option><option>南投縣</option>
+        <option>雲林縣</option><option>嘉義市</option><option>嘉義縣</option><option>屏東縣</option><option>宜蘭縣</option><option>花蓮縣</option>
+        <option>臺東縣</option><option>澎湖縣</option><option>金門縣</option><option>連江縣</option>
+      </select>
+    </div>
+    <div class="form-group" id="ci-orgtype-row" style="display:none;">
+      <label>🏢 機構類型（現場報名填）</label>
+      <select id="ci-orgtype">
+        <option value="">-- 請選擇 --</option>
+        <option>醫院</option><option>診所</option><option>衛生局</option><option>衛生所</option><option>學校／學術機構</option><option>其他</option>
+      </select>
+    </div>
+
     <!-- 參加方式：僅「含線上」的場次才出現（北/南純實體自動算實體） -->
     <div class="form-group" id="ci-attend-row" style="display:none;">
       <label>📍 參加方式（本場含線上，請選擇）</label>
@@ -384,6 +403,11 @@
     <div class="row"><button class="btn btn-sm btn-primary" onclick="refreshRecords()">🔄 更新</button></div>
   </div>
 
+  <div class="card">
+    <div class="card-title">📊 統計儀表板</div>
+    <div id="dash-body" style="font-size:14px;">按「🔄 更新」載入統計…</div>
+  </div>
+
   <div class="card" style="background:#e8f5f3;border-color:var(--teal);">
     <div class="card-title">產生列印簽到表</div>
     <p style="font-size:13px;color:var(--gray);margin-bottom:10px;">選場次＋版本 → 系統寫入試算表「列印簽到表」分頁 → 開啟試算表匯出 PDF。</p>
@@ -449,7 +473,7 @@ let SESSIONS = [
   { key:'north',   short:'北部場', emoji:'🔵', date:[2026,7,24], checkoutOpen:'12:00',
     venue:'國立臺灣師範大學進修推廣學院/演講廳1樓演講堂', online:false, timeText:'7/24(五) 9:30–12:30' },
   { key:'east',    short:'東部場', emoji:'🟢', date:[2026,7,28], checkoutOpen:'13:50',
-    venue:'慈濟大學', online:true,  timeText:'7/28(二) 13:00–14:20（含線上）' },
+    venue:'慈濟大學/B105階梯教室', online:true,  timeText:'7/28(二) 13:00–14:20（含線上）' },
   { key:'central', short:'中部場', emoji:'🟡', date:[2026,7,30], checkoutOpen:'13:50',
     venue:'國立臺中科技大學', online:true,  timeText:'7/30(四) 13:00–14:20（含線上）' },
   { key:'south',   short:'南部場', emoji:'🔴', date:[2026,7,31], checkoutOpen:'15:30',
@@ -472,6 +496,7 @@ let CONTROL = { activeSession: 0, ciOpen: true, coOpen: false };
 let ROSTER   = {};   // { north:[...], east:[...], ... }
 let UNIT_MAP = {};
 let CITY_MAP = {};
+let ORGTYPE_MAP = {};
 
 async function loadNameList() {
   const apiUrl = getApiUrl();
@@ -484,6 +509,7 @@ async function loadNameList() {
       ROSTER   = json.rosters || {};
       UNIT_MAP = json.unitMap || {};
       CITY_MAP = json.cityMap || {};
+      ORGTYPE_MAP = json.orgTypeMap || {};
       const total = Object.values(ROSTER).reduce((a,b)=>a+(b?b.length:0),0);
       if (total>0) { el.style.display='none'; }
       else { el.textContent='ℹ️ 尚無報名名單（可直接現場報名）'; el.style.color='var(--gray)'; }
@@ -646,8 +672,12 @@ function checkNameStatus(name){
   const unitRow=document.getElementById('ci-unit-row');
   const unitInput=document.getElementById('ci-unit');
   const info=document.getElementById('ci-reg-info');
+  const cityRow=document.getElementById('ci-city-row');
+  const typeRow=document.getElementById('ci-orgtype-row');
   if(found){
     if(unitRow) unitRow.style.display='none';
+    if(cityRow) cityRow.style.display='none';
+    if(typeRow) typeRow.style.display='none';
     const u=UNIT_MAP[name]||'', c=CITY_MAP[name]||'';
     if(unitInput && u) unitInput.value=u;   // 背景帶入 → 研習證明會用到
     if(info){
@@ -657,8 +687,10 @@ function checkNameStatus(name){
       if(!u&&!c) h='';
       info.innerHTML=h; info.style.display=h?'block':'none';
     }
-  } else {
+  } else {   // 現場報名（不在名單）→ 顯示單位/縣市/類型供統計
     if(unitRow) unitRow.style.display='block';
+    if(cityRow) cityRow.style.display='block';
+    if(typeRow) typeRow.style.display='block';
     if(info) info.style.display='none';
   }
 }
@@ -666,7 +698,7 @@ function clearNameStatus(){
   const el=document.getElementById('name-status');
   el.className='name-status'; el.textContent='';
   document.getElementById('ci-submit-btn').disabled=false;
-  const unitRow=document.getElementById('ci-unit-row'); if(unitRow) unitRow.style.display='none';
+  ['ci-unit-row','ci-city-row','ci-orgtype-row'].forEach(function(id){ const r=document.getElementById(id); if(r) r.style.display='none'; });
   const info=document.getElementById('ci-reg-info'); if(info) info.style.display='none';
 }
 // 身份證欄位：僅「護理人員」選取時出現（申請繼續教育積分才需填）
@@ -837,6 +869,8 @@ async function submitCheckin(){
   if(!sig){showAlert('ci-alert','error','請完成電子簽名');return;}
 
   const unit=document.getElementById('ci-unit').value.trim();
+  const city=document.getElementById('ci-city').value;       // 現場報名填；已報名者留空(統計用報名表)
+  const orgType=document.getElementById('ci-orgtype').value;
   const now=new Date().toLocaleString('zh-TW');
   const sessionLabel=sessLabel(ciSession);
 
@@ -855,7 +889,7 @@ async function submitCheckin(){
     const sbtn=document.getElementById('ci-submit-btn');
     const sbtnTxt=sbtn.textContent; sbtn.disabled=true; sbtn.textContent='⏳ 上傳中…';
     try{
-      const res=await fetchWithTimeout(apiUrl,{method:'POST',body:JSON.stringify({action:'checkin',session:sessionLabel,name,unit,idno,role,checkinTime:now,signature:sig,registered:isRegistered,onsite:!isRegistered,email,attendType:(attendType||'實體')})});
+      const res=await fetchWithTimeout(apiUrl,{method:'POST',body:JSON.stringify({action:'checkin',session:sessionLabel,name,unit,idno,role,checkinTime:now,signature:sig,registered:isRegistered,onsite:!isRegistered,email,attendType:(attendType||'實體'),city,orgType})});
       try{ const json=await res.json(); if(json){ if(json.success===false) cloudOk=false; if(json.duplicate) duplicate=true; } }catch(_){}
     }catch(e){console.warn('雲端上傳失敗',e);cloudOk=false;}
     document.getElementById('loading-overlay').classList.remove('show');
@@ -876,6 +910,8 @@ async function submitCheckin(){
   document.getElementById('ci-idno').value='';
   document.getElementById('ci-role').value='';
   document.getElementById('ci-email').value='';
+  document.getElementById('ci-city').value='';
+  document.getElementById('ci-orgtype').value='';
   onRoleChange();
   updateAttendRow();
   clearNameStatus();
@@ -1110,7 +1146,7 @@ function normalizeRemoteRec(r){
   };
   const reg=r.registered;
   return {
-    session:s, name:r.name, unit:r.unit, role:r.role, attendType:r.attendType,
+    session:s, name:r.name, unit:r.unit, role:r.role, attendType:r.attendType, city:r.city, orgType:r.orgType,
     checkin:fmt(r.checkin), checkout:fmt(r.checkout),
     registered:(reg===true||reg==='✅'||reg==='TRUE'||reg==='已報名'||reg==='Y')
   };
@@ -1135,6 +1171,7 @@ async function refreshRecords(){
   document.getElementById('rec-cnt-reg').textContent=recs.filter(r=>r.registered).length;
   document.getElementById('rec-cnt-phys').textContent=recs.filter(r=>r.checkin&&r.attendType!=='線上').length;
   document.getElementById('rec-cnt-online').textContent=recs.filter(r=>r.checkin&&r.attendType==='線上').length;
+  renderDashboard(recs);
   if(!recs.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#9fb3b0;padding:16px">尚無紀錄</td></tr>';return;}
   tbody.innerHTML=recs.map(r=>`<tr>
     <td>${(SESSIONS[r.session]?SESSIONS[r.session].short:r.session).replace('部場','')}</td>
@@ -1143,6 +1180,46 @@ async function refreshRecords(){
     <td style="font-size:11px">${r.checkin||'--'}</td>
     <td style="font-size:11px">${r.checkout||'--'}</td>
   </tr>`).join('');
+}
+
+// 統計儀表板：各縣市／機構類型／職稱（以「已簽到」的人計算，長條圖呈現）
+function renderDashboard(recs){
+  const el=document.getElementById('dash-body');
+  if(!el) return;
+  const attended=recs.filter(r=>r.checkin);
+  const total=attended.length;
+  if(!total){ el.innerHTML='<div style="color:var(--gray);">尚無簽到資料</div>'; return; }
+  function tally(fn){
+    const m={};
+    attended.forEach(function(r){ const k=(fn(r)||'').trim()||'未提供'; m[k]=(m[k]||0)+1; });
+    return Object.keys(m).map(function(k){return [k,m[k]];}).sort(function(a,b){return b[1]-a[1];});
+  }
+  const phys=attended.filter(r=>r.attendType!=='線上').length;
+  const online=attended.filter(r=>r.attendType==='線上').length;
+  const byCity=tally(function(r){return r.city || CITY_MAP[r.name];});   // 現場報名用自己填的，其餘用報名表
+  const byType=tally(function(r){return r.orgType || ORGTYPE_MAP[r.name];});
+  const byRole=tally(function(r){return r.role;});
+  function block(title,arr){
+    if(!arr.length) return '';
+    const max=arr[0][1]||1;
+    return '<div style="margin:6px 0 16px;"><div style="font-weight:800;color:var(--teal);margin-bottom:8px;">'+title+'</div>'+
+      arr.map(function(kv){
+        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'+
+          '<div style="width:110px;flex-shrink:0;font-size:13px;line-height:1.3;">'+kv[0]+'</div>'+
+          '<div style="flex:1;background:#eef5f3;border-radius:6px;height:18px;overflow:hidden;">'+
+            '<div style="width:'+Math.round(kv[1]/max*100)+'%;background:var(--teal);height:100%;"></div>'+
+          '</div>'+
+          '<div style="width:38px;text-align:right;font-weight:800;">'+kv[1]+'</div>'+
+        '</div>';
+      }).join('')+'</div>';
+  }
+  el.innerHTML=
+    '<div style="background:var(--teal-light);border-radius:9px;padding:10px 12px;margin-bottom:14px;font-weight:700;color:var(--teal);text-align:center;">'+
+      '共 '+total+' 人到場　🏫 實體 '+phys+'　💻 線上 '+online+'</div>'+
+    block('🏙️ 各縣市', byCity)+
+    block('🏢 各機構類型', byType)+
+    block('👤 各職稱', byRole)+
+    '<div style="font-size:12px;color:var(--gray);line-height:1.7;margin-top:6px;border-top:1px solid var(--border);padding-top:8px;">※ 職稱含所有簽到者。縣市、機構類型：已報名者取自「報名表」，現場報名者為當場填寫；未填者顯示「未提供」。</div>';
 }
 
 async function buildPrint(type){
