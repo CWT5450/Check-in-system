@@ -312,7 +312,7 @@
     <div class="card-title">🎯 目前場次（套用到簽到／簽退）</div>
     <div class="sess-btns" id="adm-sess-btns"><!-- 依 SESSIONS 動態產生 --></div>
     <div id="adm-sess-current" style="font-size:13px;font-weight:700;color:var(--teal);margin-top:10px;text-align:center;"></div>
-    <p style="font-size:11px;color:#999;margin-top:8px;line-height:1.5;">選好場次後，簽到／簽退頁就固定顯示這一場，學員不會選錯。活動當天系統會自動帶到當天場次。</p>
+    <p style="font-size:12px;color:#c62828;margin-top:8px;line-height:1.6;font-weight:700;">⚠️ 每場活動開始前，請工作人員在這裡「手動切換」到當天場次（不會自動切換）。切換後所有參加者手機會同步。</p>
   </div>
 
   <div class="card" style="border-color:var(--teal);">
@@ -835,6 +835,7 @@ async function submitCheckin(){
   const email=document.getElementById('ci-email').value.trim();
   const idno=document.getElementById('ci-idno').value.trim().toUpperCase();
   const role=document.getElementById('ci-role').value;
+  if(!role){showAlert('ci-alert','error','請選擇「身份類別／職稱」');return;}
 
   if(!isRegistered){
     if(!confirm('此姓名不在報名名單中。\n是否以「現場報名」方式完成報到？')) return;
@@ -1120,7 +1121,7 @@ async function clearTestData(){
   const apiUrl=getApiUrl();
   if(apiUrl){
     try{
-      await fetch(apiUrl,{method:'POST',body:JSON.stringify({action:'clearRecords'})});
+      await fetch(apiUrl,{method:'POST',body:JSON.stringify({action:'clearRecords',key:EVENT.adminKey})});
       st.style.color='#0a7c6e'; st.textContent='✅ 已清除所有簽到紀錄（本機＋試算表）';
     }catch(e){
       st.style.color='#e65100'; st.textContent='⚠️ 本機已清除，試算表清除失敗，請手動刪除';
