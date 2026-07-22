@@ -256,56 +256,32 @@
     <div class="sess-btns" id="co-sess-btns" style="display:none;"></div>
   </div>
 
-  <div id="co-survey-card" style="background:linear-gradient(135deg,#fff3e0,#fff8e1);border:2.5px solid #f57c00;border-radius:16px;padding:20px 16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(245,124,0,0.18);">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-      <div style="width:36px;height:36px;background:#f57c00;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📋</div>
-      <div><div style="font-size:15px;font-weight:800;color:#e65100;letter-spacing:0.5px;">Step 1：填寫回饋問卷</div></div>
+  <div id="co-survey-card" style="background:linear-gradient(135deg,#e8f5f3,#f0f9f7);border:2.5px solid var(--teal);border-radius:16px;padding:20px 16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(10,124,110,0.15);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div style="width:36px;height:36px;background:var(--teal);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📝</div>
+      <div style="font-size:17px;font-weight:800;color:var(--teal);">填寫回饋問卷</div>
     </div>
-    <div style="height:1px;background:#f9a825;opacity:0.4;margin:12px 0;"></div>
-    <p style="font-size:16px;font-weight:700;color:#6d4c41;margin-bottom:14px;line-height:1.6;text-align:center;">
-      簽退前請先完成回饋問卷，感謝您的寶貴意見！
+    <p style="font-size:16px;font-weight:700;color:#3a4a48;margin-bottom:14px;line-height:1.75;text-align:center;">
+      請填寫回饋問卷並<b>送出</b>，系統就會<b>自動幫您完成簽退</b>，不用再回到這頁 🌿
     </p>
     <a id="co-survey-link" href="#" target="_blank"
        style="display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;
-              background:linear-gradient(135deg,#f57c00,#e65100);color:white;
-              border-radius:12px;padding:16px;font-size:16px;font-weight:700;
-              box-shadow:0 4px 12px rgba(230,81,0,0.35);letter-spacing:0.5px;"
-       onclick="onSurveyOpen()">
+              background:linear-gradient(135deg,#0a7c6e,#148f7f);color:white;
+              border-radius:12px;padding:16px;font-size:17px;font-weight:700;
+              box-shadow:0 4px 12px rgba(10,124,110,0.3);letter-spacing:0.5px;">
       <span style="font-size:22px;">📝</span><span>前往填寫回饋問卷</span><span style="font-size:18px;">→</span>
     </a>
-    <div style="font-size:13px;color:#e65100;text-align:center;margin-top:8px;font-weight:600;">
-      ⚠️ 填完問卷後，請返回此頁面打勾，才能完成簽退
-    </div>
-    <div id="co-survey-confirm" style="display:block;margin-top:14px;">
-      <label onclick="toggleSurveyDone()"
-             style="display:flex;align-items:center;gap:12px;padding:14px 16px;
-                    background:white;border:2px solid #f57c00;border-radius:12px;cursor:pointer;transition:all 0.2s;">
-        <div id="co-survey-check-box"
-             style="width:32px;height:32px;border-radius:8px;border:2.5px solid #ccc;
-                    background:white;display:flex;align-items:center;justify-content:center;
-                    font-size:22px;flex-shrink:0;transition:all 0.2s;"></div>
-        <input type="checkbox" id="co-survey-done" onchange="updateCoSubmitBtn()" style="display:none;">
-        <span id="co-survey-label" style="font-size:15px;font-weight:700;color:#c0392b;">我已完成回饋問卷填寫</span>
-      </label>
+    <div style="font-size:13px;color:#e65100;text-align:center;margin-top:10px;font-weight:600;line-height:1.6;">
+      ⚠️ 問卷裡的姓名請跟簽到時<b>一樣</b>，系統才對得到您
     </div>
   </div>
 
-  <div class="card">
-    <div id="co-locked" style="display:none;text-align:center;padding:24px 16px;">
+  <div class="card" id="co-locked-card" style="display:none;">
+    <div id="co-locked" style="text-align:center;padding:24px 16px;">
       <div style="font-size:44px;margin-bottom:10px;">🔒</div>
       <div style="font-size:17px;font-weight:800;color:#c0392b;margin-bottom:6px;">簽退尚未開放</div>
       <div id="co-locked-msg" style="font-size:14px;color:#666;margin-bottom:16px;line-height:1.7;">活動進行中，請先完成「簽到」。</div>
       <button class="btn btn-primary" onclick="switchTab('checkin')" style="max-width:260px;margin:0 auto;">✍️ 先前往簽到</button>
-    </div>
-    <div id="co-form">
-      <div class="card-title">Step 2：確認簽退</div>
-      <div class="form-group">
-        <label>您的姓名</label>
-        <input type="text" id="co-name" placeholder="請輸入姓名">
-      </div>
-      <div id="co-alert" class="alert"></div>
-      <button class="btn btn-primary" id="co-submit-btn" onclick="submitCheckout()" disabled
-        style="opacity:0.5;" title="請先完成回饋問卷">🚪 確認簽退</button>
     </div>
   </div>
 </div>
@@ -336,6 +312,14 @@
       <span id="co-open-state" style="margin-left:auto;font-weight:800;font-size:15px;"></span>
     </div>
     <p id="adm-ctrl-hint" style="font-size:12px;color:#999;margin-top:12px;line-height:1.5;">需先設定 Apps Script 網址，開關才會同步給大家。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🚪 手動簽退（工作人員用）</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:10px;line-height:1.6;">正常學員填問卷即自動簽退。若某人問卷姓名對不上，在此輸入姓名手動幫他簽退（依「目前場次」）。</p>
+    <div class="form-group"><label>姓名</label><input type="text" id="co-name" placeholder="請輸入姓名"></div>
+    <div id="co-alert" class="alert"></div>
+    <button class="btn btn-sm btn-primary" id="co-submit-btn" onclick="submitCheckout()">🚪 手動簽退</button>
   </div>
 
   <div class="card">
@@ -447,7 +431,7 @@ let EVENT = {
   subtitle: '115年 長者內在能力檢測(ICOPE)說明會',         // 頁首副標題
   host:     '衛生福利部國民健康署委託\n長庚科技大學辦理',   // 頁首右側主辦單位（\n＝換行；留空＝不顯示）
   notice:   '🌿 溫馨小提醒\n別忘了完成簽到與簽退唷～\n完成簽退才算完整參與，謝謝您的配合 💚',   // 給民眾看的提醒橫幅（\n＝換行；留空＝不顯示）
-  surveyUrl:'',   // 回饋問卷網址（Google 表單）。留空＝不強制問卷，直接可簽退
+  surveyUrl:'https://docs.google.com/forms/d/e/1FAIpQLScQVN-ZCZNZAL0vSukafn07oBaw-95jQSr-1_vqJyr_Lw43Ag/viewform',   // 回饋問卷（送出後由後台觸發自動簽退）
   regSheetUrl:'', // 報名表試算表網址（簽到系統從這裡讀名單）。留空＝用簽到系統本身這張表
   adminKey: 'icope-briefing-2026',  // 管理開關通關密語（需與 apps-script.gs 的 ADMIN_KEY 一致）
 };
@@ -923,7 +907,7 @@ function onSurveyOpen(){
 }
 function showSurveyConfirm(){
   const el=document.getElementById('co-survey-confirm');
-  if(el){ el.style.display='block'; el.style.animation='fadeIn 0.4s ease'; }
+  if(el){ el.style.display='block'; el.style.animation='fadeIn 0.4s ease'; }  // 新流程已無此元素，保留防呆
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&sessionStorage.getItem('icopebf_survey_opened')) showSurveyConfirm();
@@ -950,11 +934,10 @@ function toggleSurveyDone(){
   updateCoSubmitBtn();
 }
 function updateCoSubmitBtn(){
-  const done = hasSurvey() ? document.getElementById('co-survey-done').checked : true;
+  // 手動簽退＝備援，永遠可用（正式流程改為「填問卷＝自動簽退」）
   const btn = document.getElementById('co-submit-btn');
-  btn.disabled = !done;
-  btn.style.opacity = done ? '1' : '0.5';
-  btn.title = done ? '' : '請先完成回饋問卷';
+  if(!btn) return;
+  btn.disabled = false; btn.style.opacity = '1'; btn.title = '';
 }
 
 // ═══════════════════════════════════════════════
@@ -962,16 +945,14 @@ function updateCoSubmitBtn(){
 // ═══════════════════════════════════════════════
 function updateCoLockUI(){
   const open=CONTROL.coOpen;
-  const lock=document.getElementById('co-locked');
-  const form=document.getElementById('co-form');
-  const survey=document.getElementById('co-survey-card');
-  lock.style.display=open?'none':'block';
-  form.style.display=open?'block':'none';
+  const lockCard=document.getElementById('co-locked-card');   // 未開放提示（學員頁）
+  const survey=document.getElementById('co-survey-card');     // 填問卷卡（學員頁）
+  if(lockCard) lockCard.style.display=open?'none':'block';
   if(survey) survey.style.display=(open&&hasSurvey())?'block':'none';
-  if(open){ updateCoSubmitBtn(); }
-  else{
+  updateCoSubmitBtn();   // 手動簽退鈕（管理頁）永遠可用
+  if(!open){
     const msg=document.getElementById('co-locked-msg');
-    if(msg) msg.innerHTML='簽退尚未開放，請先完成「簽到」。<br>開放後再回到此頁即可簽退。';
+    if(msg) msg.innerHTML='簽退尚未開放，請先完成「簽到」。<br>開放後填回饋問卷即完成簽退。';
   }
 }
 
@@ -1027,14 +1008,7 @@ function closeCheckoutSuccess(){
   document.getElementById('checkout-success').style.display='none';
 }
 function resetSurveyStep(){
-  sessionStorage.removeItem('icopebf_survey_opened');
-  const cb = document.getElementById('co-survey-done');
-  if(cb) cb.checked = false;
-  document.getElementById('co-survey-confirm').style.display='block';
-  const box = document.getElementById('co-survey-check-box');
-  box.textContent=''; box.style.background='white'; box.style.borderColor='#ccc';
-  const label = box.closest('label');
-  if(label){ label.style.background='white'; label.style.borderColor='#f57c00'; }
+  // 新流程無問卷勾選框，這裡只需重置手動簽退按鈕
   updateCoSubmitBtn();
 }
 
