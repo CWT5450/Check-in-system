@@ -666,7 +666,7 @@ function checkNameStatus(name){
   const list=getCurrentList();
   const found=list.includes(name);
   el.className='name-status '+(found?'ok':'ng');
-  el.textContent=found?'✅ 已確認報名，歡迎參加！':'ℹ️ 此姓名不在名單中，可直接以「現場報名」完成報到';
+  el.textContent=found?'✅ 已確認報名，歡迎參加！':'ℹ️ 您為現場報名者，請完成下方資料，送出「✅ 確認簽到」即可完成報到。';
   btn.disabled=false;
   // 服務單位：已報名者背景自動帶入（並顯示確認資訊）；現場報名者顯示欄位請其填寫
   const unitRow=document.getElementById('ci-unit-row');
@@ -838,7 +838,7 @@ async function submitCheckin(){
   if(!role){showAlert('ci-alert','error','請選擇「身份類別／職稱」');return;}
 
   if(!isRegistered){
-    if(!confirm('此姓名不在報名名單中。\n是否以「現場報名」方式完成報到？')) return;
+    if(!confirm('您為現場報名者。\n按「好」即可在手機上完成報到。\n\n（若姓名可能打錯，請按「取消」修改）')) return;
     if(!document.getElementById('ci-unit').value.trim()){
       showAlert('ci-alert','error','現場報名請填寫服務單位');
       return;
@@ -890,7 +890,8 @@ async function submitCheckin(){
     const sbtn=document.getElementById('ci-submit-btn');
     const sbtnTxt=sbtn.textContent; sbtn.disabled=true; sbtn.textContent='⏳ 上傳中…';
     try{
-      const res=await fetchWithTimeout(apiUrl,{method:'POST',body:JSON.stringify({action:'checkin',session:sessionLabel,name,unit,idno,role,checkinTime:now,signature:sig,registered:isRegistered,onsite:!isRegistered,email,attendType:(attendType||'實體'),city,orgType})});
+      // 加速：主資料先送（不含簽名圖），成功畫面立刻出現；簽名圖於背景補傳
+      const res=await fetchWithTimeout(apiUrl,{method:'POST',body:JSON.stringify({action:'checkin',session:sessionLabel,name,unit,idno,role,checkinTime:now,signature:'',registered:isRegistered,onsite:!isRegistered,email,attendType:(attendType||'實體'),city,orgType})});
       try{ const json=await res.json(); if(json){ if(json.success===false) cloudOk=false; if(json.duplicate) duplicate=true; } }catch(_){}
     }catch(e){console.warn('雲端上傳失敗',e);cloudOk=false;}
     document.getElementById('loading-overlay').classList.remove('show');
@@ -903,6 +904,14 @@ async function submitCheckin(){
     if(i>=0){ if(exists){back[i].checkin=null;} else {back.splice(i,1);} saveRecords(back); }
     showAlert('ci-alert','error','⚠️ 上傳失敗，資料尚未送出！請確認網路連線後，再按一次「確認簽到」');
     return;
+  }
+
+  // 簽名圖背景補傳（不用等，成功畫面先出）；失敗自動重試一次
+  if(apiUrl&&sig){
+    const sigPayload=JSON.stringify({action:'attachSig',session:sessionLabel,name,signature:sig});
+    fetch(apiUrl,{method:'POST',body:sigPayload})
+      .then(r=>r.json()).then(j=>{ if(!j||!j.success) throw 0; })
+      .catch(()=>{ setTimeout(()=>{ fetch(apiUrl,{method:'POST',body:sigPayload}).catch(()=>{}); },3000); });
   }
 
   // 清空欄位 + 大大的成功畫面
