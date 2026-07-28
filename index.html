@@ -462,6 +462,7 @@ let EVENT = {
   notice:   '🌿 溫馨小提醒\n記得簽到，並填回饋問卷完成簽退～\n即可取得繼續教育積分與研習證明，謝謝您的配合 💚',   // 給民眾看的提醒橫幅（\n＝換行；留空＝不顯示）
   surveyUrl:'https://docs.google.com/forms/d/e/1FAIpQLScQVN-ZCZNZAL0vSukafn07oBaw-95jQSr-1_vqJyr_Lw43Ag/viewform',   // 回饋問卷（送出後由後台觸發自動簽退）
   checkinFormUrl:'https://docs.google.com/forms/d/e/1FAIpQLSeNiSNxcnyataNRUo7GDPYZ63NSrwjXbqe2PcPISaMhqKPwzg/viewform',   // 線上簽到 Google 表單（有填＝簽到頁最上方顯示大按鈕；留空＝不顯示，用原本頁內簽到）
+  checkoutFormUrl:'https://docs.google.com/forms/d/e/1FAIpQLScQVN-ZCZNZAL0vSukafn07oBaw-95jQSr-1_vqJyr_Lw43Ag/viewform',   // 簽退回饋問卷 Google 表單（寫死、不受雲端活動設定影響；簽退鈕連這個）
   regSheetUrl:'', // 報名表試算表網址（簽到系統從這裡讀名單）。留空＝用簽到系統本身這張表
   adminKey: 'icope-briefing-2026',  // 管理開關通關密語（需與 apps-script.gs 的 ADMIN_KEY 一致）
 };
@@ -978,7 +979,8 @@ function closeCheckinSuccess(){ clearInterval(_ciSuccessTimer); document.getElem
 // ═══════════════════════════════════════════════
 //  CHECKOUT — 問卷步驟（surveyUrl 為空時直接可簽退）
 // ═══════════════════════════════════════════════
-function hasSurvey(){ return !!(EVENT.surveyUrl && EVENT.surveyUrl.trim()); }
+function checkoutUrl(){ return EVENT.checkoutFormUrl || (EVENT.surveyUrl && EVENT.surveyUrl.trim()) || ''; }
+function hasSurvey(){ return !!checkoutUrl(); }
 function onSurveyOpen(){
   sessionStorage.setItem('icopebf_survey_opened','1');
   setTimeout(()=>showSurveyConfirm(), 1500);
@@ -1022,8 +1024,7 @@ function updateCoSubmitBtn(){
 //  CHECKOUT LOCK
 // ═══════════════════════════════════════════════
 function updateCoLockUI(){
-  const formMode=!!EVENT.checkinFormUrl;   // 表單模式：簽退（填問卷）鈕永遠顯示、不受簽退開關鎖
-  const open=CONTROL.coOpen||formMode;
+  const open=CONTROL.coOpen;   // 簽退開關控制簽退（填問卷）大按鈕的顯示
   const lockCard=document.getElementById('co-locked-card');   // 未開放提示（學員頁）
   const survey=document.getElementById('co-survey-card');     // 填問卷卡（學員頁）
   if(lockCard) lockCard.style.display=open?'none':'block';
@@ -1323,7 +1324,7 @@ function renderStaticTexts(){
   }
   const link=document.getElementById('co-survey-link');
   const card=document.getElementById('co-survey-card');
-  if(hasSurvey()){ if(link) link.href=EVENT.surveyUrl; }
+  if(hasSurvey()){ if(link) link.href=checkoutUrl(); }
   else { if(card) card.style.display='none'; }
 }
 
