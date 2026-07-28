@@ -24,6 +24,11 @@
   .tab-bar{display:flex;background:white;border-bottom:2px solid var(--border);overflow-x:auto;}
   .tab-btn{flex:1;min-width:72px;padding:16px 8px;border:none;background:none;font-family:'Noto Sans TC',sans-serif;font-size:18px;font-weight:700;color:var(--gray);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s;white-space:nowrap;}
   .tab-btn.active{color:var(--teal);border-bottom-color:var(--teal);}
+  /* 簽到／簽退：做成明顯的方框大按鈕（學員用） */
+  .tab-btn.tab-main{flex:1;margin:8px 5px;padding:14px 6px;border:2.5px solid #e07b39;border-radius:12px;background:#fff3e9;color:#c4661f;font-size:19px;font-weight:900;}
+  .tab-btn.tab-main.active{background:#e07b39;color:#fff;border-color:#e07b39;box-shadow:0 2px 8px rgba(224,123,57,.32);}
+  /* 管理／紀錄：縮小到旁邊（工作人員用） */
+  .tab-btn.tab-sub{flex:0 0 auto;min-width:60px;font-size:14px;padding:16px 6px;opacity:.72;}
   .page{display:none;padding:18px 14px 40px;max-width:560px;margin:0 auto;}
   .page.active{display:block;}
   .card{background:white;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(10,124,110,0.08);border:1px solid var(--border);}
@@ -82,8 +87,10 @@
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
   .api-warn{background:#fff8e1;border:1px solid #f9a825;border-radius:8px;padding:10px 12px;font-size:12px;color:#e65100;margin-bottom:14px;display:none;}
   .api-warn.show{display:block;}
-  .notice-banner{display:none;background:#fff8e1;border:1.5px solid #f9a825;color:#e65100;border-radius:12px;padding:13px 16px;margin-bottom:14px;font-size:17px;font-weight:800;text-align:center;line-height:1.6;letter-spacing:0.5px;}
+  .notice-banner{display:none;background:#f0f7f5;border:1.5px solid #cfe4de;color:#0a6b5e;border-radius:12px;padding:13px 16px;margin-bottom:14px;font-size:16px;font-weight:700;text-align:center;line-height:1.6;letter-spacing:0.5px;}
   .notice-banner.show{display:block;}
+  @keyframes ciPulse{0%,100%{transform:scale(1);box-shadow:0 4px 16px rgba(10,124,110,.35);}50%{transform:scale(1.02);box-shadow:0 6px 22px rgba(10,124,110,.5);}}
+  @keyframes ciArrow{0%,100%{transform:translateY(0);}50%{transform:translateY(5px);}}
   .radio-group label{font-size:15px;margin-right:14px;}
   .switch-btn{flex:1;padding:14px 0;font-size:18px;font-weight:800;border:2px solid var(--border);background:white;color:var(--gray);}
   .switch-btn.on{background:#0a7c6e;color:white;border-color:#0a7c6e;box-shadow:0 3px 8px rgba(10,124,110,0.3);}
@@ -140,16 +147,16 @@
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn active" onclick="switchTab('checkin',this)">✍️ 簽到</button>
-  <button class="tab-btn" onclick="switchTab('checkout',this)">🚪 簽退</button>
-  <button class="tab-btn" onclick="requireAdmin('admin',this)">⚙️ 管理</button>
-  <button class="tab-btn" onclick="requireAdmin('records',this)">📊 紀錄</button>
+  <button class="tab-btn tab-main active" onclick="switchTab('checkin',this)">✍️ 簽到</button>
+  <button class="tab-btn tab-main" onclick="switchTab('checkout',this)">🚪 簽退</button>
+  <button class="tab-btn tab-sub" onclick="requireAdmin('admin',this)">⚙️ 管理</button>
+  <button class="tab-btn tab-sub" onclick="requireAdmin('records',this)">📊 紀錄</button>
 </div>
 
 <!-- ══ 簽到頁 ══ -->
 <div id="page-checkin" class="page active">
   <div class="api-warn" id="api-warn">⚠️ 尚未設定 API 網址，資料將只存在本機。請至管理頁設定 Apps Script 網址。</div>
-  <div id="list-status" style="font-size:12px;color:var(--gray);text-align:center;padding:6px 0 2px;">⏳ 名單載入中…</div>
+  <div id="list-status" style="display:none;font-size:12px;color:var(--gray);text-align:center;padding:6px 0 2px;"></div>
 
   <!-- 報到截止鎖定畫面 -->
   <div id="ci-locked" style="display:none;">
@@ -162,15 +169,21 @@
   </div>
 
   <div id="ci-content">
-  <div class="notice-banner"></div>
-  <div class="card" id="ci-sess-card" style="text-align:center;padding:14px 18px;">
+  <div class="card" id="ci-sess-card" style="text-align:center;">
+    <div class="card-title">場次資訊</div>
     <div style="font-size:12px;color:var(--gray);margin-bottom:3px;">目前簽到場次</div>
-    <div id="ci-auto-sess-badge" style="font-size:17px;font-weight:800;color:var(--teal);"></div>
+    <div id="ci-auto-sess-badge" style="font-size:19px;font-weight:800;color:var(--teal);"></div>
     <div id="ci-session-badge" style="display:none;"></div>
     <div class="sess-btns" id="ci-sess-btns" style="display:none;"></div>
   </div>
+  <a id="ci-form-link" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none;">
+    <div style="background:#0a7c6e;color:#fff;border-radius:16px;padding:24px 18px;margin:0 0 14px;text-align:center;box-shadow:0 4px 14px rgba(10,124,110,.32);animation:ciPulse 1.8s ease-in-out infinite;">
+      <div style="font-size:34px;font-weight:900;letter-spacing:3px;line-height:1.2;color:#fff;">請 點 此 簽 到</div>
+      <div style="font-size:14.5px;font-weight:600;margin-top:10px;opacity:.9;">輕觸開啟 Google 表單，填寫送出即完成 <span style="display:inline-block;animation:ciArrow 1.2s ease-in-out infinite;">👆</span></div>
+    </div>
+  </a>
 
-  <div class="card">
+  <div class="card" id="ci-basic-card">
     <div class="card-title">基本資料</div>
 
     <div class="form-group">
@@ -250,7 +263,7 @@
       </div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" id="ci-sig-group">
       <label>③ 電子簽名</label>
       <div class="sig-wrap" id="ci-sig-wrap">
         <canvas id="sigCanvas"></canvas>
@@ -262,38 +275,28 @@
     <div id="ci-alert" class="alert"></div>
     <button class="btn btn-primary" id="ci-submit-btn" onclick="submitCheckin()">✅ 確認簽到</button>
   </div>
+  <div class="notice-banner" style="margin-top:14px;margin-bottom:0;"></div>
   </div><!-- /ci-content -->
 </div>
 
 <!-- ══ 簽退頁 ══ -->
 <div id="page-checkout" class="page">
-  <div class="notice-banner"></div>
   <div class="card" id="co-sess-card" style="text-align:center;">
     <div class="card-title">場次資訊</div>
     <div style="font-size:12px;color:var(--gray);margin-bottom:3px;">目前簽退場次</div>
-    <div id="co-auto-sess-badge" style="font-size:17px;font-weight:800;color:var(--teal);"></div>
+    <div id="co-auto-sess-badge" style="font-size:19px;font-weight:800;color:var(--teal);"></div>
     <div class="sess-btns" id="co-sess-btns" style="display:none;"></div>
   </div>
 
-  <div id="co-survey-card" style="background:linear-gradient(135deg,#e8f5f3,#f0f9f7);border:2.5px solid var(--teal);border-radius:16px;padding:20px 16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(10,124,110,0.15);">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <div style="width:36px;height:36px;background:var(--teal);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📝</div>
-      <div style="font-size:17px;font-weight:800;color:var(--teal);">簽退方式：填寫回饋問卷</div>
-    </div>
-    <p style="font-size:16px;font-weight:700;color:#3a4a48;margin-bottom:14px;line-height:1.85;text-align:center;">
-      您的每一份回饋，都是我們進步的方向 🌿<br>
-      請填寫回饋問卷並<b>送出</b>，系統就會<b>自動幫您完成簽退</b>。
-    </p>
-    <a id="co-survey-link" href="#" target="_blank"
-       style="display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;
-              background:linear-gradient(135deg,#0a7c6e,#148f7f);color:white;
-              border-radius:12px;padding:16px;font-size:17px;font-weight:700;
-              box-shadow:0 4px 12px rgba(10,124,110,0.3);letter-spacing:0.5px;">
-      <span style="font-size:22px;">📝</span><span>前往填寫回饋問卷</span><span style="font-size:18px;">→</span>
+  <div id="co-survey-card">
+    <a id="co-survey-link" href="#" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
+      <div style="background:#0a7c6e;color:#fff;border-radius:16px;padding:24px 18px;margin:0 0 8px;text-align:center;box-shadow:0 4px 14px rgba(10,124,110,.32);animation:ciPulse 1.8s ease-in-out infinite;">
+        <div style="font-size:16px;font-weight:700;opacity:.9;margin-bottom:6px;">📝 填回饋問卷 ＝ 完成簽退</div>
+        <div style="font-size:34px;font-weight:900;letter-spacing:3px;line-height:1.2;color:#fff;">請 點 此 簽 退</div>
+        <div style="font-size:14.5px;font-weight:600;margin-top:10px;opacity:.9;">填寫問卷送出後，系統自動幫您簽退 <span style="display:inline-block;animation:ciArrow 1.2s ease-in-out infinite;">👆</span></div>
+      </div>
     </a>
-    <div style="font-size:13px;color:#e65100;text-align:center;margin-top:10px;font-weight:600;line-height:1.6;">
-      ⚠️ 問卷姓名請與「簽到」時<b>一致</b>，系統才能核對！
-    </div>
+    <div style="font-size:13px;color:#c4661f;text-align:center;margin:0 4px 14px;font-weight:700;line-height:1.6;">⚠️ 問卷姓名請與「簽到」時<b>一致</b>，系統才能核對</div>
   </div>
 
   <div class="card" id="co-locked-card" style="display:none;">
@@ -304,6 +307,7 @@
       <button class="btn btn-primary" onclick="switchTab('checkin')" style="max-width:260px;margin:0 auto;">✍️ 先前往簽到</button>
     </div>
   </div>
+  <div class="notice-banner" style="margin-top:14px;margin-bottom:0;"></div>
 </div>
 
 <!-- ══ 管理頁 ══ -->
@@ -334,7 +338,7 @@
     <p id="adm-ctrl-hint" style="font-size:12px;color:#999;margin-top:12px;line-height:1.5;">需先設定 Apps Script 網址，開關才會同步給大家。</p>
   </div>
 
-  <div class="card">
+  <div class="card" style="display:none;">
     <div class="card-title">🚪 手動簽退（工作人員用）</div>
     <p style="font-size:13px;color:var(--gray);margin-bottom:10px;line-height:1.6;">正常學員填問卷即自動簽退。若某人問卷姓名對不上，在此輸入姓名手動幫他簽退（依「目前場次」）。</p>
     <div class="form-group"><label>姓名</label><input type="text" id="co-name" placeholder="請輸入姓名"></div>
@@ -457,6 +461,7 @@ let EVENT = {
   host:     '衛生福利部國民健康署委託\n長庚科技大學辦理',   // 頁首右側主辦單位（\n＝換行；留空＝不顯示）
   notice:   '🌿 溫馨小提醒\n記得簽到，並填回饋問卷完成簽退～\n即可取得繼續教育積分與研習證明，謝謝您的配合 💚',   // 給民眾看的提醒橫幅（\n＝換行；留空＝不顯示）
   surveyUrl:'https://docs.google.com/forms/d/e/1FAIpQLScQVN-ZCZNZAL0vSukafn07oBaw-95jQSr-1_vqJyr_Lw43Ag/viewform',   // 回饋問卷（送出後由後台觸發自動簽退）
+  checkinFormUrl:'https://docs.google.com/forms/d/e/1FAIpQLSeNiSNxcnyataNRUo7GDPYZ63NSrwjXbqe2PcPISaMhqKPwzg/viewform',   // 線上簽到 Google 表單（有填＝簽到頁最上方顯示大按鈕；留空＝不顯示，用原本頁內簽到）
   regSheetUrl:'', // 報名表試算表網址（簽到系統從這裡讀名單）。留空＝用簽到系統本身這張表
   adminKey: 'icope-briefing-2026',  // 管理開關通關密語（需與 apps-script.gs 的 ADMIN_KEY 一致）
 };
@@ -470,12 +475,8 @@ let EVENT = {
 //   venue  : 地點（顯示與列印用）
 //   online : 是否含線上同步（僅顯示提示，簽到共用同一套）
 let SESSIONS = [
-  { key:'north',   short:'北部場', emoji:'🔵', date:[2026,7,24], checkoutOpen:'12:00',
-    venue:'國立臺灣師範大學進修推廣學院/演講廳1樓演講堂', online:false, timeText:'7/24(五) 9:30–12:30' },
-  { key:'east',    short:'東部場', emoji:'🟢', date:[2026,7,28], checkoutOpen:'13:50',
-    venue:'慈濟大學/B105階梯教室', online:true,  timeText:'7/28(二) 13:00–14:20（含線上）' },
   { key:'central', short:'中部場', emoji:'🟡', date:[2026,7,30], checkoutOpen:'13:50',
-    venue:'國立臺中科技大學', online:true,  timeText:'7/30(四) 13:00–14:20（含線上）' },
+    venue:'國立臺中科技大學', online:true,  timeText:'7/30(四) 13:00–14:20（實體+線上）' },
   { key:'south',   short:'南部場', emoji:'🔴', date:[2026,7,31], checkoutOpen:'15:30',
     venue:'台灣文創訓練中心(TCCC)高雄信義館', online:false, timeText:'7/31(五) 13:00–16:00' },
 ];
@@ -484,8 +485,8 @@ let SESSIONS = [
 //  設定區結束（以下為系統邏輯，一般不需更動）
 // ═══════════════════════════════════════════════════════════════
 
-function sess(i){ return SESSIONS[i]; }
-function sessLabel(i){ return SESSIONS[i].short; }
+function sess(i){ return SESSIONS[i] || SESSIONS[0]; }
+function sessLabel(i){ return (SESSIONS[i] || SESSIONS[0]).short; }
 
 // 全體共用的控制狀態（由管理員在管理頁設定，存雲端，所有裝置同步）
 let CONTROL = { activeSession: 0, ciOpen: true, coOpen: false };
@@ -504,6 +505,8 @@ let ORGTYPE_MAP = {};
 async function loadNameList() {
   const apiUrl = getApiUrl();
   const el = document.getElementById('list-status');
+  // 改用 Google 表單簽到時，不需頁內名單 → 直接跳過，不呼叫 getRoster，減少 Apps Script 負荷
+  if (EVENT.checkinFormUrl) { if(el) el.style.display='none'; return; }
   if (!apiUrl) { el.textContent='⚠️ 尚未設定 API 網址（名單未載入，可現場報名）'; el.style.color='#e65100'; return; }
   try {
     const res  = await fetch(apiUrl + '?action=getRoster');
@@ -595,13 +598,18 @@ function applyControl(){
   const i=CONTROL.activeSession||0;
   ciSession=i; coSession=i;
   // 尚未同步且無快取 → 先顯示「同步中」，不閃出可能錯誤的預設場次
-  const label=_ctrlSynced ? `${sess(i).emoji} ${sess(i).short}　${sess(i).timeText}` : '⏳ 場次同步中…';
-  const cib=document.getElementById('ci-auto-sess-badge'); if(cib){ cib.textContent=label; cib.style.display='block'; }
-  const cob=document.getElementById('co-auto-sess-badge'); if(cob){ cob.textContent=label; cob.style.display='block'; }
+  let labelHtml;
+  if(_ctrlSynced){
+    const tt=sess(i).timeText||'', pIdx=tt.indexOf('（');
+    const ttHtml = pIdx>=0 ? tt.slice(0,pIdx).trim()+'<br><span style="font-size:.72em;font-weight:800;opacity:.95;">'+tt.slice(pIdx)+'</span>' : tt;
+    labelHtml = `${sess(i).emoji} ${sess(i).short}　${ttHtml}`;
+  } else labelHtml='⏳ 場次同步中…';
+  const cib=document.getElementById('ci-auto-sess-badge'); if(cib){ cib.innerHTML=labelHtml; cib.style.display='block'; }
+  const cob=document.getElementById('co-auto-sess-badge'); if(cob){ cob.innerHTML=labelHtml; cob.style.display='block'; }
   SESSIONS.forEach((s,j)=>{const b=document.getElementById('adm-s'+j); if(b) b.classList.toggle('selected',j===i);});
   const cur=document.getElementById('adm-sess-current'); if(cur) cur.textContent='✅ 目前場次：'+sess(i).short+'（'+sess(i).timeText+'）';
   // 只有在「場次真的變了」才清空姓名/問卷，避免定時同步時洗掉使用者正在輸入的內容
-  if(_lastActive!==i){ _lastActive=i; updateNameDropdown(''); clearNameStatus(); resetSurveyStep(); updateAttendRow(); }
+  if(_lastActive!==i){ _lastActive=i; updateNameDropdown(''); clearNameStatus(); resetSurveyStep(); updateAttendRow(); updateSigRow(); }
   updateCiLockUI();
   updateCoLockUI();
   updateAdmControlStatus();
@@ -715,6 +723,17 @@ function onRoleChange(){
   const role=document.getElementById('ci-role').value;
   const row=document.getElementById('ci-idno-row');
   if(row) row.style.display=(role.indexOf('護理')>=0)?'block':'none';
+}
+
+// ── 免簽名場次（高流量避免簽名上傳塞車；列在這裡的場次簽到不需簽名）──
+const SKIP_SIG_SESSIONS=['北部場','東部場','中部場','南部場'];   // 全場次免簽名（要恢復哪場就把它從清單移除）
+function sessionNoSig(){ try{ return SKIP_SIG_SESSIONS.some(k=>sessLabel(ciSession).indexOf(k)>=0); }catch(_){ return false; } }
+function updateSigRow(){
+  const g=document.getElementById('ci-sig-group'); if(!g) return;
+  const hide=sessionNoSig();
+  g.style.display=hide?'none':'block';
+  // 從免簽場切回需簽場時，若簽名板尚未初始化（曾隱藏寬度為0）就重新初始化
+  if(!hide && sigCanvas && sigCanvas.width===0){ try{ initSig(); }catch(_){} }
 }
 
 // 參加方式（實體/線上）：僅含線上的場次要選；純實體場自動算「實體」
@@ -836,6 +855,8 @@ async function fetchWithTimeout(url,opts={},ms=25000){
 }
 
 async function submitCheckin(){
+  // 防呆：場次尚未從雲端同步完成前不可送出（避免壅塞時被記到預設場次）
+  if(!_ctrlSynced){ showAlert('ci-alert','error','⏳ 場次同步中，請稍候 3 秒再按一次'); loadControl(); return; }
   const name=document.getElementById('ci-name').value.trim();
   if(!name){showAlert('ci-alert','error','請輸入姓名');return;}
 
@@ -875,8 +896,9 @@ async function submitCheckin(){
     return;
   }
 
-  const sig=getSigData();
-  if(!sig){showAlert('ci-alert','error','請完成電子簽名');return;}
+  const noSig=sessionNoSig();                 // 免簽名場次（如中部場）：跳過簽名
+  const sig=noSig?null:getSigData();
+  if(!sig&&!noSig){showAlert('ci-alert','error','請完成電子簽名');return;}
 
   const unit=document.getElementById('ci-unit').value.trim();
   const city=document.getElementById('ci-city').value;       // 現場報名填；已報名者留空(統計用報名表)
@@ -1000,7 +1022,8 @@ function updateCoSubmitBtn(){
 //  CHECKOUT LOCK
 // ═══════════════════════════════════════════════
 function updateCoLockUI(){
-  const open=CONTROL.coOpen;
+  const formMode=!!EVENT.checkinFormUrl;   // 表單模式：簽退（填問卷）鈕永遠顯示、不受簽退開關鎖
+  const open=CONTROL.coOpen||formMode;
   const lockCard=document.getElementById('co-locked-card');   // 未開放提示（學員頁）
   const survey=document.getElementById('co-survey-card');     // 填問卷卡（學員頁）
   if(lockCard) lockCard.style.display=open?'none':'block';
@@ -1284,6 +1307,15 @@ function renderStaticTexts(){
     if(EVENT.notice){ b.innerHTML=_nl2br(EVENT.notice); b.classList.add('show'); }
     else b.classList.remove('show');
   });
+  var _cfl=document.getElementById('ci-form-link');
+  var _bc=document.getElementById('ci-basic-card');
+  if(EVENT.checkinFormUrl){
+    if(_cfl){ _cfl.href=EVENT.checkinFormUrl; _cfl.style.display='block'; }
+    if(_bc) _bc.style.display='none';        // 改用 Google 表單簽到 → 隱藏頁內基本資料
+  }else{
+    if(_cfl) _cfl.style.display='none';
+    if(_bc) _bc.style.display='';
+  }
   const hostEl=document.getElementById('hdr-host');
   if(hostEl){
     if(EVENT.host){ hostEl.innerHTML=_nl2br(EVENT.host); hostEl.style.display='block'; }
