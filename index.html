@@ -489,6 +489,9 @@ function sessLabel(i){ return SESSIONS[i].short; }
 
 // 全體共用的控制狀態（由管理員在管理頁設定，存雲端，所有裝置同步）
 let CONTROL = { activeSession: 0, ciOpen: true, coOpen: false };
+let _ctrlSynced = false;   // 是否已跟雲端同步過（避免開頁先閃出錯誤場次）
+// 開頁先套用「上次同步成功的快取」→ 回訪者一開頁就顯示正確場次，不會先看到預設場
+try{ const c = JSON.parse(localStorage.getItem('icope_ctrl_cache')||'null'); if(c && typeof c.activeSession==='number'){ CONTROL = Object.assign(CONTROL, c); _ctrlSynced = true; } }catch(_){}
 
 // ═══════════════════════════════════════════════
 //  名單（從 Apps Script 抓取；未設定或斷線時為空，一律走現場報名）
@@ -562,7 +565,12 @@ async function loadControl(){
   try{
     const res=await fetch(apiUrl+'?action=getControl');
     const json=await res.json();
-    if(json.success && json.control){ CONTROL=Object.assign(CONTROL,json.control); applyControl(); }
+    if(json.success && json.control){
+      CONTROL=Object.assign(CONTROL,json.control);
+      _ctrlSynced=true;
+      try{ localStorage.setItem('icope_ctrl_cache', JSON.stringify(CONTROL)); }catch(_){}   // 快取→下次開頁秒顯示正確場次
+      applyControl();
+    }
   }catch(e){ console.warn('讀取控制狀態失敗',e); }
 }
 
@@ -586,7 +594,8 @@ let _lastActive=null;
 function applyControl(){
   const i=CONTROL.activeSession||0;
   ciSession=i; coSession=i;
-  const label=`${sess(i).emoji} ${sess(i).short}　${sess(i).timeText}`;
+  // 尚未同步且無快取 → 先顯示「同步中」，不閃出可能錯誤的預設場次
+  const label=_ctrlSynced ? `${sess(i).emoji} ${sess(i).short}　${sess(i).timeText}` : '⏳ 場次同步中…';
   const cib=document.getElementById('ci-auto-sess-badge'); if(cib){ cib.textContent=label; cib.style.display='block'; }
   const cob=document.getElementById('co-auto-sess-badge'); if(cob){ cob.textContent=label; cob.style.display='block'; }
   SESSIONS.forEach((s,j)=>{const b=document.getElementById('adm-s'+j); if(b) b.classList.toggle('selected',j===i);});
