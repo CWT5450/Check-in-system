@@ -4,6 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="color-scheme" content="light only">
+<!-- 防舊版快取：叫瀏覽器每次都重新抓最新頁面 -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+/* 版本自動更新：同一個網址，開啟時若 GitHub 上已是新版就自動載入新版（不用換 QR）。
+   做法：比對「手機現在顯示的版本」與「GitHub 最新版本」的檔案指紋(ETag)，不同就重載到新版。 */
+(function () {
+  try {
+    if (sessionStorage.getItem('_vc_done')) { sessionStorage.removeItem('_vc_done'); return; } // 剛重載過就不再檢查，避免無限重載
+    var base = location.pathname.replace(/\?.*$/, '');
+    var tagOf = function (r) { return r.headers.get('ETag') || r.headers.get('Last-Modified') || ''; };
+    Promise.all([
+      fetch(base, { cache: 'force-cache' }).then(tagOf),                    // 手機現在顯示的（可能是快取的舊版）
+      fetch(base + '?_vc=' + Date.now(), { cache: 'no-store' }).then(tagOf) // GitHub 上的最新版
+    ]).then(function (t) {
+      if (t[0] && t[1] && t[0] !== t[1]) {                                  // 兩者不同 → 手上是舊版
+        sessionStorage.setItem('_vc_done', '1');
+        location.replace(base + '?_v=' + Date.now());                       // 強制載入最新版
+      }
+    }).catch(function () { });                                              // 沒網路就安靜略過，不影響簽到
+  } catch (e) { }
+})();
+</script>
 <title>ICOPE 說明會簽到系統</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
@@ -459,7 +483,7 @@ let EVENT = {
   title:    'ICOPE 說明會簽到系統',                       // 頁首大標題
   subtitle: '115年 長者內在能力檢測(ICOPE)說明會',         // 頁首副標題
   host:     '衛生福利部國民健康署委託\n長庚科技大學辦理',   // 頁首右側主辦單位（\n＝換行；留空＝不顯示）
-  notice:   '🌿 溫馨小提醒\n記得簽到，並填回饋問卷完成簽退～\n即可取得繼續教育積分與研習證明，謝謝您的配合 💚',   // 給民眾看的提醒橫幅（\n＝換行；留空＝不顯示）
+  notice:   '🌿 溫馨小提醒\n記得簽到+課後填寫回饋問卷 = 完成簽退～\n即可取得繼續教育積分與研習證明，\n謝謝您的配合 💚',   // 給民眾看的提醒橫幅（\n＝換行；留空＝不顯示）
   surveyUrl:'https://docs.google.com/forms/d/e/1FAIpQLScQVN-ZCZNZAL0vSukafn07oBaw-95jQSr-1_vqJyr_Lw43Ag/viewform',   // 回饋問卷（送出後由後台觸發自動簽退）
   checkinFormUrl:'https://docs.google.com/forms/d/e/1FAIpQLSeNiSNxcnyataNRUo7GDPYZ63NSrwjXbqe2PcPISaMhqKPwzg/viewform',   // 線上簽到 Google 表單（有填＝簽到頁最上方顯示大按鈕；留空＝不顯示，用原本頁內簽到）
   checkoutFormUrl:'https://docs.google.com/forms/d/e/1FAIpQLScQVN-ZCZNZAL0vSukafn07oBaw-95jQSr-1_vqJyr_Lw43Ag/viewform',   // 簽退回饋問卷 Google 表單（寫死、不受雲端活動設定影響；簽退鈕連這個）
